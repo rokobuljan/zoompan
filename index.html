@@ -203,15 +203,16 @@
 
             const thumbSizeX = bcrVpt.width ** 2 / areaWidth;
             const thumbSizeY = bcrVpt.height ** 2 / areaHeight;
-            elScrXThumb.style.width = `${thumbSizeX}px`;
-            elScrYThumb.style.height = `${thumbSizeY}px`;
 
             const cvsRelX = bcrCvs.left - bcrVpt.left;
             const cvsRelY = bcrCvs.top - bcrVpt.top;
             const thumbPosX = (bcrVpt.width - cvsRelX - padd) / bcrVpt.width * thumbSizeX;
             const thumbPosY = (bcrVpt.height - cvsRelY - padd) / bcrVpt.height * thumbSizeY;
 
+            elScrXThumb.style.width = `${thumbSizeX}px`;
             elScrXThumb.style.left = `${thumbPosX}px`;
+
+            elScrYThumb.style.height = `${thumbSizeY}px`;
             elScrYThumb.style.top = `${thumbPosY}px`;
         };
 
