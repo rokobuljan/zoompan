@@ -7,6 +7,9 @@ Code example to ease later conversion into a more powerful ans flexible tool.
 TODO:  
 Create a nifty reusable Class.
 
+LINKS:  
+https://stackoverflow.com/a/74164612/383904
+
 ### Licence:
 
 MIT
