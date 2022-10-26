@@ -2,14 +2,41 @@
 
 Pannable and zoomable area with scrollbars inspired by graphical editors like Photoshop. 
 
-Code example to ease later conversion into a more powerful ans flexible tool.
+## Setup:
 
-TODO:  
-Create a nifty reusable Class.
+**HTML:**
 
-LINKS:  
-https://stackoverflow.com/a/74164612/383904
+```html
+<div id="myEditor">
+    <div class="zoompan-viewport">
+        <div class="zoompan-canvas"></div>
+    </div>
 
-### Licence:
+    <div class="zoompan-track-x">
+        <div class="zoompan-thumb-x"></div>
+    </div>
+    <div class="zoompan-track-y">
+        <div class="zoompan-thumb-y"></div>
+    </div>
+</div>
+```
+
+**CSS:**
+
+```html
+<link rel="stylesheet" href="zoompan.css">
+```
+
+**JS:**
+
+```
+import ZoomPan from "./zoompan.js";
+const ZP = new ZoomPan("#myEditor");
+```
+
+
+
+
+### Licence
 
 MIT

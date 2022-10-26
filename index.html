@@ -5,31 +5,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <link rel="shortcut icon" href="#!" type="image/x-icon">
-    <title>Photoshop alike zoom pan area (Best) by Roko 10.2022.</title>
+    <title>Zoom Pan area by @rokobuljan</title>
 
 
+    <link rel="stylesheet" href="zoompan.css">
     <style>
         * {
             margin: 0;
             box-sizing: border-box;
         }
 
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 0px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background-color: #fff;
-        }
-
-        html {
-            min-height: 100%;
+        body {
             background: hsl(200, 4%, 16%);
         }
 
@@ -41,27 +27,46 @@
             height: 80vh;
         }
 
-        #viewport {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+        #controls {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            gap: 2px;
+        }
 
+        #controls button,
+        #controls select {
+            flex: none;
+            outline: none;
+            border: 0;
+            background: rgba(0, 0, 0, 0.3);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            padding: 0 0.5rem;
+        }
+
+        #controls option {
+            color: #000;
+        }
+
+        #zoomPct {
+            width: 4.5rem;
+        }
+
+        #zoomPct option[disabled] {
+            display: none;
+        }
+
+        /* ZoomPan: Custom overrides: */
+
+        .zoompan-viewport {
             background: hsl(200, 4%, 19%);
         }
 
-        #canvas {
-            flex: none;
-            transform-origin: 50% 50%;
-
+        .zoompan-canvas {
             background-size: 50px 50px, 50px 50px, cover;
             background-image:
                 linear-gradient(to right, black 1px, transparent 1px),
                 linear-gradient(to bottom, black 1px, transparent 1px),
-                linear-gradient(90deg,
+                linear-gradient(45deg,
                     hsl(0, 100%, 50%),
                     hsl(30, 100%, 50%),
                     hsl(60, 100%, 50%),
@@ -75,241 +80,90 @@
                     hsl(300, 100%, 50%),
                     hsl(330, 100%, 50%),
                     hsl(360, 100%, 50%));
-
         }
 
-        .scrollTrack {
-            position: absolute;
-        }
-
-        #scrollTrack-x {
-            bottom: -10px;
-            left: 0;
-            width: 100%;
-            height: 10px;
-            background: hsla(0 0% 0% / 0.2);
-        }
-
-        #scrollTrack-y {
-            right: -10px;
-            top: 0;
-            width: 10px;
-            height: 100%;
-            background: hsla(0 0% 0% / 0.2);
-        }
-
-        .scrollThumb {
-            background: #fffb;
-            position: absolute;
-        }
-
-        #scrollTrack-x .scrollThumb {
-            height: 100%;
-            cursor: w-resize;
-        }
-
-        #scrollTrack-y .scrollThumb {
-            width: 100%;
-            cursor: s-resize;
-        }
-
-        .dot {
-            width: 6px;
-            height: 6px;
-            margin: -3px;
-            position: absolute;
-            outline: 1px solid #fff;
+        .zoompan-track-x {
+            /* Smaller track, to make space for #controls */
+            width: calc(100% - 150px);
+            left: 150px;
         }
     </style>
 </head>
 
 <body>
-    <div id="editor">
-        <div id="viewport">
-            <div id="canvas"></div>
+
+    <div id="myEditor">
+
+        <div class="zoompan-viewport">
+            <div class="zoompan-canvas"></div>
         </div>
-        <div class="scrollTrack" id="scrollTrack-x">
-            <div class="scrollThumb"></div>
+
+        <div class="zoompan-track-x">
+            <div class="zoompan-thumb-x"></div>
         </div>
-        <div class="scrollTrack" id="scrollTrack-y">
-            <div class="scrollThumb"></div>
+
+        <div class="zoompan-track-y">
+            <div class="zoompan-thumb-y"></div>
+        </div>
+
+        <div id="controls">
+            <button id="zoomOut">-</button>
+            <button id="zoomIn">+</button>
+            <select id="zoomPct">
+                <option disabled></option>
+                <option value="0.25">25%</option>
+                <option value="0.5">50%</option>
+                <option value="0.75">75%</option>
+                <option value="1.0">100%</option>
+                <option value="1.25">125%</option>
+                <option value="1.5">150%</option>
+                <option value="2.0">200%</option>
+            </select>
+            <button id="fit">Fit</button>
         </div>
     </div>
 
+    <script type="module">
+        import ZoomPan from "./zoompan.js";
 
-    <script>
         const el = (sel, par) => (par || document).querySelector(sel);
 
-        const elVpt = el("#viewport");
-        const elCvs = el('#canvas');
-        const elScrX = el("#scrollTrack-x");
-        const elScrXThumb = el(".scrollThumb", elScrX);
-        const elScrY = el("#scrollTrack-y");
-        const elScrYThumb = el(".scrollThumb", elScrY);
+        const elZoomPct = el("#zoomPct");
 
-        const offset = { x: 0, y: 0 };
-
-        const padd = 40; // Make canvas always visible at least "padd"px
-
-        const scaleFactor = 0.2;
-        const scaleMax = 10;
-        const scaleMin = 0.04;
-
-        const canvasWidth = 400;
-        const canvasHeight = 200;
-
-        let areaWidth = 0;
-        let areaHeight = 0;
-
-        let scale = 1;
-        let isPan = false;
-
-        let isThumbDragX = false;
-        let isThumbDragY = false;
-
-        elCvs.style.width = `${canvasWidth}px`;
-        elCvs.style.height = `${canvasHeight}px`;
-
-        const changeScale = (delta) => {
-            scale *= Math.exp(delta * scaleFactor);
-            scale = Math.max(scaleMin, Math.min(scaleMax, scale));
-            scale = +scale.toFixed(2);
+        const setSelectOptionText = (scale) => {
+            const elOpt0 = elZoomPct.querySelector("option");
+            elOpt0.textContent = Math.round(scale * 100) + "%";
+            elZoomPct.selectedIndex = 0;
         };
 
-        const changeScaleToFit = () => {
-            // Scale to fit original size (1.0) or less (with padd around viewport if needed)
-            const wRatio = elVpt.clientWidth / (elCvs.clientWidth + padd * 2);
-            const hRatio = elVpt.clientHeight / (elCvs.clientHeight + padd * 2);
-            const fitRatio = Math.min(1, wRatio, hRatio);
-            scale = +fitRatio.toFixed(1);
-            applyTransform();
-        };
-
-        const fixOffset = () => {
-            const bcrCvs = elCvs.getBoundingClientRect();
-            const spaceX = elVpt.offsetWidth / 2 + bcrCvs.width / 2 - padd;
-            const spaceY = elVpt.offsetHeight / 2 + bcrCvs.height / 2 - padd;
-            offset.x = Math.max(-spaceX, Math.min(spaceX, offset.x));
-            offset.y = Math.max(-spaceY, Math.min(spaceY, offset.y));
-        };
-
-        const applyScrollbars = () => {
-            const bcrVpt = elVpt.getBoundingClientRect();
-            const bcrCvs = elCvs.getBoundingClientRect();
-
-            // Fictive "outer bounding area" size:
-            areaWidth = (bcrVpt.width - padd) * 2 + bcrCvs.width;
-            areaHeight = (bcrVpt.height - padd) * 2 + bcrCvs.height;
-
-            const thumbSizeX = bcrVpt.width ** 2 / areaWidth;
-            const thumbSizeY = bcrVpt.height ** 2 / areaHeight;
-
-            const cvsRelX = bcrCvs.left - bcrVpt.left;
-            const cvsRelY = bcrCvs.top - bcrVpt.top;
-            const thumbPosX = (bcrVpt.width - cvsRelX - padd) / bcrVpt.width * thumbSizeX;
-            const thumbPosY = (bcrVpt.height - cvsRelY - padd) / bcrVpt.height * thumbSizeY;
-
-            elScrXThumb.style.width = `${thumbSizeX}px`;
-            elScrXThumb.style.left = `${thumbPosX}px`;
-
-            elScrYThumb.style.height = `${thumbSizeY}px`;
-            elScrYThumb.style.top = `${thumbPosY}px`;
-        };
-
-        const applyTransform = () => {
-            elCvs.style.scale = scale;
-            fixOffset(); // Fix XY offset after scaling
-            elCvs.style.translate = `${offset.x}px ${offset.y}px`;
-            applyScrollbars();
-        };
-
-        elScrX.addEventListener("pointerdown", (evt) => {
-            evt.preventDefault();
-            isThumbDragX = true;
+        const ZP = new ZoomPan("#myEditor", {
+            scale: 0.3,
+            width: 800,
+            height: 500,
+            scaleMin: 0.05,
+            onInit() {
+                setSelectOptionText(this.scale);
+            },
+            onScale() {
+                setSelectOptionText(this.scale);
+            },
         });
 
-        elScrY.addEventListener("pointerdown", (evt) => {
-            evt.preventDefault();
-            isThumbDragY = true;
+        elZoomPct.addEventListener("input", () => {
+            ZP.scaleTo(+elZoomPct.value);
         });
 
-        addEventListener("pointermove", (evt) => {
-            if (!(isThumbDragX || isThumbDragY)) {
-                return;
-            }
-            if (isThumbDragX) {
-                offset.x -= (areaWidth / elVpt.offsetWidth) * evt.movementX;
-                applyTransform();
-            }
-            else if (isThumbDragY) {
-                offset.y -= (areaHeight / elVpt.offsetHeight) * evt.movementY;
-                applyTransform();
-            }
+        el("#zoomIn").addEventListener("click", () => {
+            ZP.scaleUp();
         });
 
-        elVpt.addEventListener("pointerdown", (evt) => {
-            evt.preventDefault();
-            isPan = true;
+        el("#zoomOut").addEventListener("click", () => {
+            ZP.scaleDown();
         });
 
-        addEventListener("pointermove", (evt) => {
-            if (!isPan || isThumbDragX) {
-                return;
-            }
-            evt.preventDefault();
-            offset.x += evt.movementX;
-            offset.y += evt.movementY;
-            applyTransform();
+        el("#fit").addEventListener("click", () => {
+            ZP.fit("cover");
         });
-
-        addEventListener("pointerup", (evt) => {
-            isPan = false;
-            isThumbDragY = false;
-            isThumbDragX = false;
-        });
-
-        elVpt.addEventListener("wheel", (evt) => {
-            evt.preventDefault();
-
-            const delta = Math.sign(-evt.deltaY);
-            const bcrCvs = elCvs.getBoundingClientRect();
-
-            // Get XY coords from canvas center
-            // This values are "current" (on the currently transformed #canvas)
-            const x = evt.x - bcrCvs.left - bcrCvs.width / 2;
-            const y = evt.y - bcrCvs.top - bcrCvs.height / 2;
-            // Remember the current scale
-            const scaleOld = scale;
-            // Change the scale value by delta
-            changeScale(delta);
-            // Calculate the XY as if the element is in its
-            // original, non-scaled size: 
-            const xOrg = x / scaleOld;
-            const yOrg = y / scaleOld;
-
-            // Calculate the scaled XY 
-            const xNew = xOrg * scale;
-            const yNew = yOrg * scale;
-
-            // Retrieve the XY difference to be used as the change in offset.
-            const xDiff = x - xNew;
-            const yDiff = y - yNew;
-
-            offset.x += xDiff;
-            offset.y += yDiff;
-
-            applyTransform();
-
-        }, { passive: false });
-
-
-        addEventListener("resize", () => {
-            applyTransform();
-        });
-
-        // Init:
-        changeScaleToFit();
-        applyScrollbars();
     </script>
 </body>
 

@@ -1,0 +1,53 @@
+/*
+ * ZoomPan
+ *
+ * Basic template styles:
+ */
+
+.zoompan-viewport {
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+}
+
+.zoompan-canvas {
+    flex: none;
+    transform-origin: center;
+}
+
+.zoompan-track-x {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    height: 14px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    touch-action: none;
+}
+
+.zoompan-track-y {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 14px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    touch-action: none;
+}
+
+.zoompan-thumb-x {
+    position: absolute;
+    height: inherit;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.zoompan-thumb-y {
+    position: absolute;
+    width: inherit;
+    background: rgba(255, 255, 255, 0.5);
+}
