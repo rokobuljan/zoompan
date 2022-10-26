@@ -1,6 +1,8 @@
 # Pannable zoomable area with scrollbars
 
-Pannable and zoomable area with scrollbars inspired by graphical editors like Photoshop. 
+Pannable and zoomable area with scrollbars inspired by graphical editors like Photoshop.
+
+![Zoom pan area like image edit software](./zoompan.png)
 
 ## Setup:
 
