@@ -37,10 +37,7 @@ class ZoomPan {
             onPanEnd: noop,
             onScale: noop,
             onInit: noop,
-        }, options, {
-            _areaWidth: 0,
-            _areaHeight: 0,
-        });
+        }, options);
 
         this.elViewport = el(".zoompan-viewport", this.elParent);
         this.elCanvas = el(".zoompan-canvas", this.elParent);
