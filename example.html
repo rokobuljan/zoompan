@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width">
     <link rel="shortcut icon" href="#!" type="image/x-icon">
     <title>Zoom Pan area by @rokobuljan</title>
-
-
     <link rel="stylesheet" href="zoompan.css">
     <style>
         * {
@@ -127,15 +125,15 @@
         import ZoomPan from "./zoompan.js";
 
         const el = (sel, par) => (par || document).querySelector(sel);
-
         const elZoomPct = el("#zoomPct");
 
         const setSelectOptionText = (scale) => {
-            const elOpt0 = elZoomPct.querySelector("option");
+            const elOpt0 = el("option", elZoomPct);
             elOpt0.textContent = Math.round(scale * 100) + "%";
             elZoomPct.selectedIndex = 0;
         };
 
+        
         const ZP = new ZoomPan("#myEditor", {
             scale: 0.3,
             width: 800,

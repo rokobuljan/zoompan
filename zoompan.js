@@ -50,10 +50,10 @@ class ZoomPan {
         this.elCanvas.style.width = `${this.width}px`;
         this.elCanvas.style.height = `${this.height}px`;
 
-        this.elViewport.addEventListener("wheel", (evt) => this.handleWheel(evt), { passive: false });
-        this.elViewport.addEventListener("pointerdown", (evt) => this.handlePan(evt));
-        this.elTrackX.addEventListener("pointerdown", (evt) => this.handleThumbX(evt));
-        this.elTrackY.addEventListener("pointerdown", (evt) => this.handleThumbY(evt));
+        this.elViewport.addEventListener("wheel", (evt) => this._handleWheel(evt), { passive: false });
+        this.elViewport.addEventListener("pointerdown", (evt) => this._handlePan(evt));
+        this.elTrackX.addEventListener("pointerdown", (evt) => this._handleThumbX(evt));
+        this.elTrackY.addEventListener("pointerdown", (evt) => this._handleThumbY(evt));
         addEventListener("resize", () => this.transform());
 
         // Init        
@@ -135,23 +135,25 @@ class ZoomPan {
         this.scale = this.calcScaleDelta(delta);
         this.transform();
         this.onScale();
+        return this.scale;
     }
 
     scaleTo(scale) {
         this.scale = clamp(scale, this.scaleMin, this.scaleMax);;
         this.transform();
         this.onScale();
+        return this.scale;
     }
 
     scaleUp() {
-        this.scaleDelta(1);
+        return this.scaleDelta(1);
     }
 
     scaleDown() {
-        this.scaleDelta(-1);
+        return this.scaleDelta(-1);
     }
 
-    handleWheel(evt) {
+    _handleWheel(evt) {
         evt.preventDefault();
 
         const vpt = this.getViewport();
@@ -189,7 +191,7 @@ class ZoomPan {
         this.onPan();
     }
 
-    handlePan(evt) {
+    _handlePan(evt) {
         drag(evt,
             () => this.onPanStart(),
             (ev) => {
@@ -202,7 +204,7 @@ class ZoomPan {
         );
     }
 
-    handleThumbX(evt) {
+    _handleThumbX(evt) {
         drag(evt,
             () => this.onPanStart(),
             (ev) => {
@@ -215,7 +217,7 @@ class ZoomPan {
         );
     }
 
-    handleThumbY(evt) {
+    _handleThumbY(evt) {
         drag(evt,
             () => this.onPanStart(),
             (ev) => {
