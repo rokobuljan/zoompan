@@ -73,6 +73,7 @@ class ZoomPan {
         this.height = height ?? this.height;
         this.elCanvas.style.width = `${this.width}px`;
         this.elCanvas.style.height = `${this.height}px`;
+        this.updateScrollbars();
     }
 
     fit() {

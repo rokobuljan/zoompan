@@ -50,18 +50,18 @@ const ZP = new ZoomPan(someElement, {
 
 ## Options
 
-| Name          | Type            | Default value | Description                           |
-| ------------- | --------------- | ------------- | ------------------------------------- |
-| `width`       | Number          | `800`         | Canvas width                          |
-| `height`      | Number          | `600`         | Canvas height                         |
-| `offsetX`     | Number          | `0`           | Canvas offset X (from center)         |
-| `offsetY`     | Number          | `0`           | Canvas offset Y (from center)         |
-| `scale`       | Number          | `1`           | Initial Scale (if not fitted on init) |
-| `fitOnInit`   | Boolean         | `true`        | Fix canvas into viewport on init      |
-| `scaleFactor` | Number          | `0.2`         | Scale factor                          |
-| `scaleMin`    | Number          | `0.05`        | Scale min value                       |
-| `scaleMax`    | Number          | `10`          | Scale max value                       |
-| `padd`        | Number          | `40`          | Min visible canvas padd               |
+| Name          | Type    | Default value | Description                           |
+| ------------- | ------- | ------------- | ------------------------------------- |
+| `width`       | Number  | `800`         | Canvas width                          |
+| `height`      | Number  | `600`         | Canvas height                         |
+| `offsetX`     | Number  | `0`           | Canvas offset X (from center)         |
+| `offsetY`     | Number  | `0`           | Canvas offset Y (from center)         |
+| `scale`       | Number  | `1`           | Initial Scale (if not fitted on init) |
+| `fitOnInit`   | Boolean | `true`        | Fix canvas into viewport on init      |
+| `scaleFactor` | Number  | `0.2`         | Scale factor                          |
+| `scaleMin`    | Number  | `0.05`        | Scale min value                       |
+| `scaleMax`    | Number  | `10`          | Scale max value                       |
+| `padd`        | Number  | `40`          | Min visible canvas padd               |
 
 ## Options &mdash; Events
 
@@ -91,6 +91,7 @@ const ZP = new ZoomPan(someElement, {
 | `scaleDown()`                         |                       | Scale down by `scaleFactor`                |
 | `scaleDelta(delta)`                   |                       | Scale by delta                             |
 | `fit()`                               |                       | Fit canvas to viewport center (*contain*)  |
+| `resize(width, height)`               |                       | Change canvas width and height             |
 | `updateScrollbars()`                  |                       | Reposition and resize scrollbars           |
 | `getCanvas()`                         | {x, y, width, height} | Get Canvas data                            |
 | `getViewport()`                       | {x, y, width, height} | Get Viewport data                          |
