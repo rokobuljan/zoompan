@@ -1,20 +1,18 @@
 const el = (sel, par) => (par || document).querySelector(sel);
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 const noop = () => { };
-const drag = (evt, onDragStart, onDrag, onDragEnd) => {
-    evt.preventDefault();
-    onDragStart(evt);
-    const move = (evt) => {
+const pointerHandler = (el, evFn = {}) => {
+    const onUp = (evt) => {
+        removeEventListener("pointermove", evFn.onMove);
+        removeEventListener("pointerup", onUp);
+        evFn.onUp?.(evt);
+    };
+    el.addEventListener("pointerdown", (evt) => {
         evt.preventDefault();
-        onDrag(evt);
-    };
-    const up = (evt) => {
-        removeEventListener("pointermove", move);
-        removeEventListener("pointerup", up);
-        onDragEnd(evt);
-    };
-    addEventListener("pointermove", move);
-    addEventListener("pointerup", up);
+        addEventListener("pointermove", evFn.onMove);
+        addEventListener("pointerup", onUp);
+        evFn.onDown?.(evt);
+    });
 };
 
 class ZoomPan {
@@ -27,9 +25,10 @@ class ZoomPan {
             offsetX: 0, // Pan offset. 0 = From canvas center
             offsetY: 0,
             scale: 1,
-            scaleFactor: 0.2,
+            scaleOld: 1,
             scaleMax: 10,
             scaleMin: 0.05,
+            scaleFactor: 0.2,
             padd: 40,
             fitOnInit: true,
             onPan: noop,
@@ -49,9 +48,33 @@ class ZoomPan {
 
         this.elParent.classList.add("zoompan");
         this.elViewport.addEventListener("wheel", (evt) => this._handleWheel(evt), { passive: false });
-        this.elViewport.addEventListener("pointerdown", (evt) => this._handlePan(evt));
-        this.elTrackX.addEventListener("pointerdown", (evt) => this._handleThumbX(evt));
-        this.elTrackY.addEventListener("pointerdown", (evt) => this._handleThumbY(evt));
+
+        pointerHandler(this.elViewport, {
+            onDown: () => this.onPanStart(),
+            onUp: () => this.onPanEnd(),
+            onMove: (ev) => {
+                this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
+            },
+        });
+
+        pointerHandler(this.elTrackX, {
+            onDown: () => this.onPanStart(),
+            onUp: () => this.onPanEnd(),
+            onMove: (ev) => {
+                const area = this.getArea();
+                this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
+            },
+        });
+
+        pointerHandler(this.elTrackY, {
+            onDown: () => this.onPanStart(),
+            onUp: () => this.onPanEnd(),
+            onMove: (ev) => {
+                const area = this.getArea();
+                this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
+            },
+        });
+
         addEventListener("resize", () => this.panTo(this.offsetX, this.offsetY));
 
         // Init   
@@ -129,11 +152,11 @@ class ZoomPan {
     }
 
     scaleUp() {
-        return this.scaleDelta(1);
+        this.scaleDelta(1);
     }
 
     scaleDown() {
-        return this.scaleDelta(-1);
+        this.scaleDelta(-1);
     }
 
     scaleTo(scaleNew = 1, originX, originY) {
@@ -159,12 +182,11 @@ class ZoomPan {
 
             this.panTo(this.offsetX + xDiff, this.offsetY + yDiff);
         } else {
-
             this.updateScrollbars();
         }
+
         this.elCanvas.style.scale = this.scale;
         this.onScale();
-
     }
 
     panTo(offsetX, offsetY) {
@@ -177,8 +199,8 @@ class ZoomPan {
         const spaceY = vpt.height / 2 + height / 2 - this.padd;
         this.offsetX = clamp(offsetX, -spaceX, spaceX);
         this.offsetY = clamp(offsetY, -spaceY, spaceY);
-
         this.updateScrollbars();
+
         this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
         this.onPan();
     }
@@ -201,38 +223,6 @@ class ZoomPan {
         const originY = evt.y - vpt.y - cvs.y - cvs.height / 2;
 
         this.scaleTo(scaleNew, originX, originY);
-    }
-
-    _handlePan(evt) {
-        drag(evt,
-            () => this.onPanStart(),
-            (ev) => {
-                this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
-            },
-            () => this.onPanEnd()
-        );
-    }
-
-    _handleThumbX(evt) {
-        drag(evt,
-            () => this.onPanStart(),
-            (ev) => {
-                const area = this.getArea();
-                this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
-            },
-            () => this.onPanEnd()
-        );
-    }
-
-    _handleThumbY(evt) {
-        drag(evt,
-            () => this.onPanStart(),
-            (ev) => {
-                const area = this.getArea();
-                this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
-            },
-            () => this.onPanEnd()
-        );
     }
 }
 

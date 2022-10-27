@@ -1,10 +1,11 @@
-# Pannable zoomable area with scrollbars
+# ZoomPan
 
-Pannable and zoomable area with scrollbars inspired by graphical editors like Photoshop.
+Zoomable and pannable area with scrollbars.  
+Inspired by graphical editors like Photoshop.
 
-![Zoom pan area like image edit software](./zoompan.png)
+![Zoom pan area - Image edit software scroll area](./zoompan.png)
 
-## Setup:
+## Setup
 
 **HTML:**
 
@@ -65,13 +66,13 @@ const ZP = new ZoomPan(someElement, {
 
 ## Options &mdash; Events
 
-| Name                | Description                      |
-| ------------------- | -------------------------------- |
-| `onInit()`          | Triggered on class instantiation |
-| `onScale(Event)`    | Triggered on scale change        |
-| `onPan(Event)`      | Triggered on pan (pointermove)   |
-| `onPanStart(Event)` | Triggered on pan (pointerdown)   |
-| `onPanEnd(Event)`   | Triggered on pan (pointerup)     |
+| Name           | Description                      |
+| -------------- | -------------------------------- |
+| `onInit()`     | Triggered on class instantiation |
+| `onScale()`    | Triggered on scale change        |
+| `onPan()`      | Triggered on pan (pointermove)   |
+| `onPanStart()` | Triggered on pan (pointerdown)   |
+| `onPanEnd()`   | Triggered on pan (pointerup)     |
 
 ## Properties
 
