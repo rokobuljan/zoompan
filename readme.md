@@ -33,7 +33,7 @@ Pannable and zoomable area with scrollbars inspired by graphical editors like Ph
 
 ```js
 import ZoomPan from "./zoompan.js";
-const ZP = new ZoomPan("#myEditor", {elParent: "#editor"});
+const ZP = new ZoomPan("#myEditor");
 ```
 
 Customization options:
