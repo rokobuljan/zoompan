@@ -31,26 +31,38 @@ Pannable and zoomable area with scrollbars inspired by graphical editors like Ph
 
 **JS:**
 
-```
+```js
 import ZoomPan from "./zoompan.js";
-const ZP = new ZoomPan("#myEditor");
+const ZP = new ZoomPan("#myEditor", {elParent: "#editor"});
 ```
 
-## Options object
+Customization options:
 
-| Name          | Type            | Default value | Description                   |
-| ------------- | --------------- | ------------- | ----------------------------- |
-| `elParent`    | String\|Element |               | **Mandatory** Wrapper element |
-| `width`       | Number          | `800`         | Canvas width                  |
-| `height`      | Number          | `600`         | Canvas height                 |
-| `offsetX`     | Number          | `0`           | Canvas offset X (from center) |
-| `offsetY`     | Number          | `0`           | Canvas offset Y (from center) |
-| `scaleFactor` | Number          | `0.2`         | Scale factor                  |
-| `scaleMin`    | Number          | `0.05`        | Scale min value               |
-| `scaleMax`    | Number          | `10`          | Scale max value               |
-| `padd`        | Number          | `40`          | Min visible canvas padd       |
+```js
+const ZP = new ZoomPan(someElement, {
+    width: 1920,
+    height: 1080,
+    // Other options here
+});
+```
 
-## Options object &mdash; Events
+## Options
+
+| Name          | Type            | Default value | Description                           |
+| ------------- | --------------- | ------------- | ------------------------------------- |
+| `elParent`    | String\|Element |               | **Mandatory** Wrapper element         |
+| `width`       | Number          | `800`         | Canvas width                          |
+| `height`      | Number          | `600`         | Canvas height                         |
+| `offsetX`     | Number          | `0`           | Canvas offset X (from center)         |
+| `offsetY`     | Number          | `0`           | Canvas offset Y (from center)         |
+| `scale`       | Number          | `1`           | Initial Scale (if not fitted on init) |
+| `fitOnInit`   | Boolean         | `true`        | Fix canvas into viewport on init      |
+| `scaleFactor` | Number          | `0.2`         | Scale factor                          |
+| `scaleMin`    | Number          | `0.05`        | Scale min value                       |
+| `scaleMax`    | Number          | `10`          | Scale max value                       |
+| `padd`        | Number          | `40`          | Min visible canvas padd               |
+
+## Options &mdash; Events
 
 | Name                | Description                      |
 | ------------------- | -------------------------------- |
@@ -82,7 +94,6 @@ const ZP = new ZoomPan("#myEditor");
 | `getCanvas()`                         | {x, y, width, height} | Get Canvas data                            |
 | `getViewport()`                       | {x, y, width, height} | Get Viewport data                          |
 | `getArea()`                           | {width, height}       | Get fictive *"scroll area"* size           |
-| `calcScaleDelta(delta)`               | Number                | Calculate scale by delta                   |
 
 ## Example
 

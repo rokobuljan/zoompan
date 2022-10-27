@@ -23,11 +23,10 @@ class ZoomPan {
     constructor(selector, options = {}) {
 
         Object.assign(this, {
-            elParent: typeof selector === "string" ? el(selector) : selector,
             width: 800, // Canvas width
             height: 600, // Canvas height
-            offsetX: 0, // 0 = From canvas center
-            offsetY: 0, // 0 = From canvas center
+            offsetX: 0, // Pan offset. 0 = From canvas center
+            offsetY: 0,
             scale: 1,
             scaleFactor: 0.2,
             scaleMax: 10,
@@ -41,6 +40,7 @@ class ZoomPan {
             onInit: noop,
         }, options);
 
+        this.elParent = typeof selector === "string" ? el(selector) : selector;
         this.elViewport = el(".zoompan-viewport", this.elParent);
         this.elCanvas = el(".zoompan-canvas", this.elParent);
         this.elTrackX = el(".zoompan-track-x", this.elParent);
@@ -49,21 +49,31 @@ class ZoomPan {
         this.elThumbY = el(".zoompan-thumb-y", this.elParent);
 
         this.elParent.classList.add("zoompan");
-        this.elCanvas.style.width = `${this.width}px`;
-        this.elCanvas.style.height = `${this.height}px`;
-
         this.elViewport.addEventListener("wheel", (evt) => this._handleWheel(evt), { passive: false });
         this.elViewport.addEventListener("pointerdown", (evt) => this._handlePan(evt));
         this.elTrackX.addEventListener("pointerdown", (evt) => this._handleThumbX(evt));
         this.elTrackY.addEventListener("pointerdown", (evt) => this._handleThumbY(evt));
         addEventListener("resize", () => this.panTo(this.offsetX, this.offsetY));
 
-        // Init        
+        // Init   
+
+        this.resize();
+
         if (this.fitOnInit) {
             this.fit();
+        } else {
+            this.scaleTo(this.scale);
+            this.panTo(this.offsetX, this.offsetY);
         }
 
         this.onInit();
+    }
+
+    resize(width, height) {
+        this.width = width ?? this.width;
+        this.height = height ?? this.height;
+        this.elCanvas.style.width = `${this.width}px`;
+        this.elCanvas.style.height = `${this.height}px`;
     }
 
     fit() {
@@ -187,8 +197,8 @@ class ZoomPan {
         const delta = Math.sign(-evt.deltaY);
         const scaleNew = this._calcScaleDelta(delta);
         // Get XY coordinates from canvas center:
-        const originX = evt.x - vpt.x - cvs.x - cvs.width / 2
-        const originY = evt.y - vpt.y - cvs.y - cvs.height / 2
+        const originX = evt.x - vpt.x - cvs.x - cvs.width / 2;
+        const originY = evt.y - vpt.y - cvs.y - cvs.height / 2;
 
         this.scaleTo(scaleNew, originX, originY);
     }
