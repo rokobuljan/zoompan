@@ -33,6 +33,8 @@ Pannable and zoomable area with scrollbars inspired by graphical editors like Ph
 
 ```js
 import ZoomPan from "./zoompan.js";
+
+// Initialize ZoomPan on selector ID or on Element
 const ZP = new ZoomPan("#myEditor");
 ```
 
@@ -50,7 +52,6 @@ const ZP = new ZoomPan(someElement, {
 
 | Name          | Type            | Default value | Description                           |
 | ------------- | --------------- | ------------- | ------------------------------------- |
-| `elParent`    | String\|Element |               | **Mandatory** Wrapper element         |
 | `width`       | Number          | `800`         | Canvas width                          |
 | `height`      | Number          | `600`         | Canvas height                         |
 | `offsetX`     | Number          | `0`           | Canvas offset X (from center)         |
