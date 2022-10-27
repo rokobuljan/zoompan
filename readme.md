@@ -99,6 +99,11 @@ const ZP = new ZoomPan(someElement, {
 
 See: `example.html` for a use-case.
 
+## TODO
+
+- Keyboard support
+- Pinch zoom
+
 ### Licence
 
 MIT
