@@ -26,7 +26,7 @@ Pannable and zoomable area with scrollbars inspired by graphical editors like Ph
 **CSS:**
 
 ```html
-<link rel="stylesheet" href="zoompan.css">
+<link rel="stylesheet" href="./zoompan.css">
 ```
 
 **JS:**
