@@ -28,10 +28,12 @@ class ZoomPan {
             height: 600, // Canvas height
             offsetX: 0, // 0 = From canvas center
             offsetY: 0, // 0 = From canvas center
+            scale: 1,
             scaleFactor: 0.2,
             scaleMax: 10,
             scaleMin: 0.05,
             padd: 40,
+            fitOnInit: true,
             onPan: noop,
             onPanStart: noop,
             onPanEnd: noop,
@@ -54,10 +56,13 @@ class ZoomPan {
         this.elViewport.addEventListener("pointerdown", (evt) => this._handlePan(evt));
         this.elTrackX.addEventListener("pointerdown", (evt) => this._handleThumbX(evt));
         this.elTrackY.addEventListener("pointerdown", (evt) => this._handleThumbY(evt));
-        addEventListener("resize", () => this.transform());
+        addEventListener("resize", () => this.panTo(this.offsetX, this.offsetY));
 
         // Init        
-        this.fit();
+        if (this.fitOnInit) {
+            this.fit();
+        }
+
         this.onInit();
     }
 
@@ -67,12 +72,8 @@ class ZoomPan {
         const wRatio = this.elViewport.clientWidth / (this.elCanvas.clientWidth + this.padd * 2);
         const hRatio = this.elViewport.clientHeight / (this.elCanvas.clientHeight + this.padd * 2);
         const fitRatio = +Math.min(1, wRatio, hRatio).toFixed(1);
-        this.offsetX = 0;
-        this.offsetY = 0;
-        this.scale = fitRatio;
-        this.transform();
-        this.onScale();
-        this.onPan();
+        this.scaleTo(fitRatio);
+        this.panTo(0, 0);
     }
 
     getViewport() {
@@ -84,34 +85,24 @@ class ZoomPan {
         const vpt = this.getViewport();
         const width = this.width * this.scale;
         const height = this.height * this.scale;
-
-        // Fix offsets (reposition to prevent exit viewport)
-        const spaceX = vpt.width / 2 + width / 2 - this.padd;
-        const spaceY = vpt.height / 2 + height / 2 - this.padd;
-        this.offsetX = clamp(this.offsetX, -spaceX, spaceX);
-        this.offsetY = clamp(this.offsetY, -spaceY, spaceY);
-
         const x = (vpt.width - width) / 2 + this.offsetX;
         const y = (vpt.height - height) / 2 + this.offsetY;
-
         return { width, height, x, y };
     }
 
     getArea() {
-        // (Fictive outer bounding scroll-area)
-        const cvs = this.getCanvas();
+        // Get fictive outer bounding scroll-area size.
         const vpt = this.getViewport();
+        const cvs = this.getCanvas();
         const width = (vpt.width - this.padd) * 2 + cvs.width;
         const height = (vpt.height - this.padd) * 2 + cvs.height;
-        return { width, height }
+        return { width, height };
     }
 
-    transform() {
+    updateScrollbars() {
         const vpt = this.getViewport();
         const cvs = this.getCanvas();
         const area = this.getArea();
-
-        // Scrollbars:
         const thumbSizeX = vpt.width ** 2 / area.width;
         const thumbSizeY = vpt.height ** 2 / area.height;
         const thumbPosX = (vpt.width - cvs.x - this.padd) / vpt.width * thumbSizeX;
@@ -120,29 +111,11 @@ class ZoomPan {
         this.elThumbX.style.left = `${thumbPosX / vpt.width * 100}%`;
         this.elThumbY.style.height = `${thumbSizeY / vpt.height * 100}%`;
         this.elThumbY.style.top = `${thumbPosY / vpt.height * 100}%`;
-
-        // Canvas:
-        this.elCanvas.style.scale = this.scale;
-        this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
-    }
-
-    calcScaleDelta(delta) {
-        const scale = this.scale * Math.exp(delta * this.scaleFactor);
-        return clamp(scale, this.scaleMin, this.scaleMax);
     }
 
     scaleDelta(delta) {
-        this.scale = this.calcScaleDelta(delta);
-        this.transform();
-        this.onScale();
-        return this.scale;
-    }
-
-    scaleTo(scale) {
-        this.scale = clamp(scale, this.scaleMin, this.scaleMax);;
-        this.transform();
-        this.onScale();
-        return this.scale;
+        const scaleNew = this._calcScaleDelta(delta);
+        this.scaleTo(scaleNew);
     }
 
     scaleUp() {
@@ -153,6 +126,58 @@ class ZoomPan {
         return this.scaleDelta(-1);
     }
 
+    scaleTo(scaleNew = 1, originX, originY) {
+        this.scaleOld = this.scale;
+        this.scale = clamp(scaleNew, this.scaleMin, this.scaleMax);
+
+        // The default XY origin is in the canvas center, 
+        // If the origin changed (i.e: by mouse wheel at
+        // coordinates-from-center) use the new scaling origin:
+        if (originX !== undefined && originY !== undefined) {
+            // Calculate the XY as if the element is in its
+            // original, non-scaled size: 
+            const xOrg = originX / this.scaleOld;
+            const yOrg = originY / this.scaleOld;
+
+            // Calculate the scaled XY 
+            const xNew = xOrg * scaleNew;
+            const yNew = yOrg * scaleNew;
+
+            // Retrieve the XY difference to be used as the change in offset:
+            const xDiff = originX - xNew;
+            const yDiff = originY - yNew;
+
+            this.panTo(this.offsetX + xDiff, this.offsetY + yDiff);
+        } else {
+
+            this.updateScrollbars();
+        }
+        this.elCanvas.style.scale = this.scale;
+        this.onScale();
+
+    }
+
+    panTo(offsetX, offsetY) {
+        const vpt = this.getViewport();
+        const width = this.width * this.scale;
+        const height = this.height * this.scale;
+        // Clamp offsets to prevent canvas exit viewport
+        // (and scrollbars thumbs move out of track):
+        const spaceX = vpt.width / 2 + width / 2 - this.padd;
+        const spaceY = vpt.height / 2 + height / 2 - this.padd;
+        this.offsetX = clamp(offsetX, -spaceX, spaceX);
+        this.offsetY = clamp(offsetY, -spaceY, spaceY);
+
+        this.updateScrollbars();
+        this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
+        this.onPan();
+    }
+
+    _calcScaleDelta(delta) {
+        const scale = this.scale * Math.exp(delta * this.scaleFactor);
+        return clamp(scale, this.scaleMin, this.scaleMax);
+    }
+
     _handleWheel(evt) {
         evt.preventDefault();
 
@@ -160,45 +185,19 @@ class ZoomPan {
         const cvs = this.getCanvas();
 
         const delta = Math.sign(-evt.deltaY);
-        const scaleOld = this.scale;
-        const scaleNew = this.calcScaleDelta(delta);
+        const scaleNew = this._calcScaleDelta(delta);
+        // Get XY coordinates from canvas center:
+        const originX = evt.x - vpt.x - cvs.x - cvs.width / 2
+        const originY = evt.y - vpt.y - cvs.y - cvs.height / 2
 
-        // Get XY coords from canvas center
-        // This values are "current" (on the currently transformed #canvas)
-        const x = evt.x - vpt.x - cvs.x - cvs.width / 2
-        const y = evt.y - vpt.y - cvs.y - cvs.height / 2
-
-        // Calculate the XY as if the element is in its
-        // original, non-scaled size: 
-        const xOrg = x / scaleOld;
-        const yOrg = y / scaleOld;
-
-        // Calculate the scaled XY 
-        const xNew = xOrg * scaleNew;
-        const yNew = yOrg * scaleNew;
-
-        // Retrieve the XY difference to be used as the change in offset.
-        const xDiff = x - xNew;
-        const yDiff = y - yNew;
-
-        // Apply new values and transform
-        this.scale = scaleNew;
-        this.offsetX += xDiff;
-        this.offsetY += yDiff;
-
-        this.transform();
-        this.onScale();
-        this.onPan();
+        this.scaleTo(scaleNew, originX, originY);
     }
 
     _handlePan(evt) {
         drag(evt,
             () => this.onPanStart(),
             (ev) => {
-                this.offsetX += ev.movementX;
-                this.offsetY += ev.movementY;
-                this.transform();
-                this.onPan();
+                this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
             },
             () => this.onPanEnd()
         );
@@ -209,9 +208,7 @@ class ZoomPan {
             () => this.onPanStart(),
             (ev) => {
                 const area = this.getArea();
-                this.offsetX -= (area.width / this.elTrackX.offsetWidth) * ev.movementX;
-                this.transform();
-                this.onPan();
+                this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
             },
             () => this.onPanEnd()
         );
@@ -222,9 +219,7 @@ class ZoomPan {
             () => this.onPanStart(),
             (ev) => {
                 const area = this.getArea();
-                this.offsetY -= (area.height / this.elTrackY.offsetHeight) * ev.movementY;
-                this.transform();
-                this.onPan();
+                this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
             },
             () => this.onPanEnd()
         );

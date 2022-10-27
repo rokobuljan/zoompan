@@ -36,7 +36,7 @@ import ZoomPan from "./zoompan.js";
 const ZP = new ZoomPan("#myEditor");
 ```
 
-## Options
+## Options object
 
 | Name          | Type            | Default value | Description                   |
 | ------------- | --------------- | ------------- | ----------------------------- |
@@ -49,30 +49,40 @@ const ZP = new ZoomPan("#myEditor");
 | `scaleMin`    | Number          | `0.05`        | Scale min value               |
 | `scaleMax`    | Number          | `10`          | Scale max value               |
 | `padd`        | Number          | `40`          | Min visible canvas padd       |
-## Events
+
+## Options object &mdash; Events
 
 | Name                | Description                      |
 | ------------------- | -------------------------------- |
-| `onInit(Event)`     | Triggered on class instantiation |
+| `onInit()`          | Triggered on class instantiation |
 | `onScale(Event)`    | Triggered on scale change        |
 | `onPan(Event)`      | Triggered on pan (pointermove)   |
 | `onPanStart(Event)` | Triggered on pan (pointerdown)   |
 | `onPanEnd(Event)`   | Triggered on pan (pointerup)     |
 
+## Properties
+
+| Name       | Type   | Description                |
+| ---------- | ------ | -------------------------- |
+| `scaleOld` | Number | Scale value before changed |
+
+
+
 ## Methods
 
-| Name                    | returns               | Description                                       |
-| ----------------------- | --------------------- | ------------------------------------------------- |
-| `fit()`                 |                       | Fit canvas to viewport center (contain with padd) |
-| `getViewport()`         | {x, y, width, height} | Get current Viewport rect                         |
-| `getCanvas()`           | {x, y, width, height} | Get current Canvas rect (transformed)             |
-| `getArea()`             | {width, height}       | Get fictive *"scroll area"* width and height      |
-| `calcScaleDelta(delta)` | Number                | Get a scale value by a given delta                |
-| `scaleDelta(delta)`     | Number                | Scale by delta                                    |
-| `scaleTo(newScale)`     | Number                | Scale to value                                    |
-| `scaleUp()`             | Number                | Scale up                                          |
-| `scaleDown()`           | Number                | Scale down                                        |
-| `transform()`           |                       | Apply scale and offset                            |
+| Name                                  | Returns               | Description                                |
+| ------------------------------------- | --------------------- | ------------------------------------------ |
+| `panTo(offsetX, offsetY)`             |                       | Pan canvas to new offset (from center)     |
+| `scaleTo(scale [, originX, originY])` |                       | Scale canvas to value (origin from center) |
+| `scaleUp()`                           |                       | Scale up by `scaleFactor`                  |
+| `scaleDown()`                         |                       | Scale down by `scaleFactor`                |
+| `scaleDelta(delta)`                   |                       | Scale by delta                             |
+| `fit()`                               |                       | Fit canvas to viewport center (*contain*)  |
+| `updateScrollbars()`                  |                       | Reposition and resize scrollbars           |
+| `getCanvas()`                         | {x, y, width, height} | Get Canvas data                            |
+| `getViewport()`                       | {x, y, width, height} | Get Viewport data                          |
+| `getArea()`                           | {width, height}       | Get fictive *"scroll area"* size           |
+| `calcScaleDelta(delta)`               | Number                | Calculate scale by delta                   |
 
 ## Example
 
