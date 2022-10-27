@@ -1,5 +1,4 @@
 const el = (sel, par) => (par || document).querySelector(sel);
-const elNew = (tag, prop) => Object.assign(document.createElement(tag), prop);
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 const noop = () => { };
 const drag = (evt, onDragStart, onDrag, onDragEnd) => {
