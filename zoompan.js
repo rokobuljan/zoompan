@@ -1,6 +1,64 @@
-const el = (sel, par) => (par || document).querySelector(sel);
-const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
-const noop = () => { };
+const sortIns = (a, b) => a.localeCompare(b, 0, { sensitivity: 'base' });
+const isTargetEditable = (evt) => /^(INPUT|TEXTAREA)$/.test(evt.target.tagName) || evt.target.closest("[contenteditable]");
+const aliasCtrl = (key) => key.replace(/\b(control|meta)\b/ig, "ctrl");
+const arrToStrSorted = (arr) => arr.sort(sortIns).join(" ").toLowerCase();
+const strToEvtName = (str) => arrToStrSorted(aliasCtrl(str).trim().split(/ +/));
+const hotkeys = (data, elementListener = window) => {
+    const pressedKeys = new Set();
+    const lib = {};
+
+    const checkMatch = (ev, tempKey) => {
+        if (isTargetEditable(ev)) {
+            return;
+        }
+        let keys = [...pressedKeys];
+        if (tempKey) {
+            keys = [...pressedKeys, tempKey];
+        }
+        console.log(keys);
+        const nameFromKeys = arrToStrSorted(keys);
+        lib[nameFromKeys]?.forEach(fn => {
+            ev.preventDefault();
+            fn(ev);
+        });
+    };
+
+    Object.entries(data).forEach(([hk, cb]) => {
+        const name = strToEvtName(hk);
+        lib[name] ??= [];
+        lib[name].push(cb);
+    });
+
+    elementListener.addEventListener("wheel", ev => {
+        checkMatch(ev, ev.deltaY < 0 ? "WheelUp" : "WheelDown");
+    }, { passive: false });
+
+    addEventListener("keydown", ev => {
+        pressedKeys.add(aliasCtrl(ev.key));
+        checkMatch(ev);
+    });
+
+    addEventListener("keyup", ev => {
+        pressedKeys.delete(aliasCtrl(ev.key));
+    });
+
+    const off = (name, fn) => {
+        name = strToEvtName(name);
+        const evtIndex = lib[name]?.findIndex(fn);
+        if (evtIndex < 0) {
+            return;
+        }
+        lib[name].splice(evtIndex, 1);
+        if (lib[name].length === 0) {
+            delete lib[name];
+        }
+    };
+    return {
+        hotkeys: lib,
+        off
+    };
+};
+
 const pointerHandler = (el, evFn = {}) => {
     const onUp = (evt) => {
         removeEventListener("pointermove", evFn.onMove);
@@ -14,6 +72,12 @@ const pointerHandler = (el, evFn = {}) => {
         evFn.onDown?.(evt);
     });
 };
+
+
+
+const el = (sel, par) => (par || document).querySelector(sel);
+const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+const noop = () => { };
 
 class ZoomPan {
 
@@ -30,6 +94,7 @@ class ZoomPan {
             scaleMin: 0.05,
             scaleFactor: 0.2,
             padd: 40,
+            panStep: 50,
             fitOnInit: true,
             onPan: noop,
             onPanStart: noop,
@@ -47,14 +112,13 @@ class ZoomPan {
         this.elThumbY = el(".zoompan-thumb-y", this.elParent);
 
         this.elParent.classList.add("zoompan");
-        this.elViewport.addEventListener("wheel", (evt) => this._handleWheel(evt), { passive: false });
 
         pointerHandler(this.elViewport, {
             onDown: () => this.onPanStart(),
             onUp: () => this.onPanEnd(),
             onMove: (ev) => {
                 this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
-            },
+            }
         });
 
         pointerHandler(this.elTrackX, {
@@ -63,7 +127,7 @@ class ZoomPan {
             onMove: (ev) => {
                 const area = this.getArea();
                 this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
-            },
+            }
         });
 
         pointerHandler(this.elTrackY, {
@@ -72,12 +136,12 @@ class ZoomPan {
             onMove: (ev) => {
                 const area = this.getArea();
                 this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
-            },
+            }
         });
 
         addEventListener("resize", () => this.panTo(this.offsetX, this.offsetY));
 
-        // Init   
+        // Init
 
         this.resize();
 
@@ -87,6 +151,25 @@ class ZoomPan {
             this.scaleTo(this.scale);
             this.panTo(this.offsetX, this.offsetY);
         }
+
+        // this.scaleTo(scaleNew, originX, originY);
+        hotkeys({
+            "ctrl +": ev => this.scaleUp(),
+            "ctrl -": ev => this.scaleDown(),
+            "ctrl arrowup": ev => this.panDown(),
+            "ctrl arrowdown": ev => this.panUp(),
+            "ctrl arrowleft": ev => this.panRight(),
+            "ctrl arrowright": ev => this.panLeft(),
+        });
+
+        hotkeys({
+            "wheelup": ev => this._handleWheel(ev),
+            "wheeldown": ev => this._handleWheel(ev),
+            "ctrl wheelup": ev => this._handleWheel(ev),
+            "ctrl wheeldown": ev => this._handleWheel(ev),
+            "shift wheelup": ev => this._handleWheel(ev),
+            "shift wheeldown": ev => this._handleWheel(ev),
+        }, this.elViewport);
 
         this.onInit();
     }
@@ -205,6 +288,22 @@ class ZoomPan {
         this.onPan();
     }
 
+    panUp() {
+        this.panTo(this.offsetX, this.offsetY - this.panStep);
+    }
+
+    panDown() {
+        this.panTo(this.offsetX, this.offsetY + this.panStep);
+    }
+
+    panLeft() {
+        this.panTo(this.offsetX - this.panStep, this.offsetY);
+    }
+
+    panRight() {
+        this.panTo(this.offsetX + this.panStep, this.offsetY);
+    }
+
     _calcScaleDelta(delta) {
         const scale = this.scale * Math.exp(delta * this.scaleFactor);
         return clamp(scale, this.scaleMin, this.scaleMax);
@@ -212,17 +311,22 @@ class ZoomPan {
 
     _handleWheel(evt) {
         evt.preventDefault();
-
+        const delta = Math.sign(-evt.deltaY);
         const vpt = this.getViewport();
         const cvs = this.getCanvas();
-
-        const delta = Math.sign(-evt.deltaY);
         const scaleNew = this._calcScaleDelta(delta);
         // Get XY coordinates from canvas center:
         const originX = evt.x - vpt.x - cvs.x - cvs.width / 2;
         const originY = evt.y - vpt.y - cvs.y - cvs.height / 2;
 
-        this.scaleTo(scaleNew, originX, originY);
+        // this.scaleTo(scaleNew, originX, originY);
+        if (evt.shiftKey) {
+            this.panTo(this.offsetX - this.panStep * delta, this.offsetY);
+        } else if (evt.ctrlKey || evt.metaKey) {
+            this.scaleTo(scaleNew, originX, originY);
+        } else {
+            this.panTo(this.offsetX, this.offsetY + this.panStep * delta);
+        }
     }
 }
 
