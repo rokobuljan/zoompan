@@ -1,8 +1,19 @@
+// Utility, helper functions
+
 const sortIns = (a, b) => a.localeCompare(b, 0, { sensitivity: 'base' });
 const isTargetEditable = (evt) => /^(INPUT|TEXTAREA)$/.test(evt.target.tagName) || evt.target.closest("[contenteditable]");
 const aliasCtrl = (key) => key.replace(/\b(control|meta)\b/ig, "ctrl");
 const arrToStrSorted = (arr) => arr.sort(sortIns).join(" ").toLowerCase();
 const strToEvtName = (str) => arrToStrSorted(aliasCtrl(str).trim().split(/ +/));
+
+/**
+ * Hotkeys
+ * Assign callback functions to be triggered on
+ * any combo keyboard as hotkey.
+ * @param {object} data {"a b c": fn,} Object of key combo keys with the specific 
+ * @param {HTMLElement|window} elementListener Element target to receive events (or default to `window`)
+ * @returns {object} the currently assigned hotkeys `lib` and the `off("combo keys", fb)` method to remove listeners. 
+ */
 const hotkeys = (data, elementListener = window) => {
     const pressedKeys = new Set();
     const lib = {};
@@ -15,7 +26,6 @@ const hotkeys = (data, elementListener = window) => {
         if (tempKey) {
             keys = [...pressedKeys, tempKey];
         }
-        console.log(keys);
         const nameFromKeys = arrToStrSorted(keys);
         lib[nameFromKeys]?.forEach(fn => {
             ev.preventDefault();
@@ -53,9 +63,10 @@ const hotkeys = (data, elementListener = window) => {
             delete lib[name];
         }
     };
+
     return {
-        hotkeys: lib,
-        off
+        lib,
+        off,
     };
 };
 
@@ -152,7 +163,6 @@ class ZoomPan {
             this.panTo(this.offsetX, this.offsetY);
         }
 
-        // this.scaleTo(scaleNew, originX, originY);
         hotkeys({
             "ctrl +": ev => this.scaleUp(),
             "ctrl -": ev => this.scaleDown(),
@@ -163,17 +173,59 @@ class ZoomPan {
         });
 
         hotkeys({
-            "wheelup": ev => this._handleWheel(ev),
-            "wheeldown": ev => this._handleWheel(ev),
-            "ctrl wheelup": ev => this._handleWheel(ev),
-            "ctrl wheeldown": ev => this._handleWheel(ev),
-            "shift wheelup": ev => this._handleWheel(ev),
-            "shift wheeldown": ev => this._handleWheel(ev),
+            "wheelup": ev => this.panDown(),
+            "wheeldown": ev => this.panUp(),
+            "shift wheelup": ev => this.panLeft(),
+            "shift wheeldown": ev => this.panRight(),
+            "ctrl wheelup": ev => this.scaleWheel(ev),
+            "ctrl wheeldown": ev => this.scaleWheel(ev),
         }, this.elViewport);
 
         this.onInit();
     }
 
+    /**
+     * Get pointer origin XY from pointer position
+     * relative from canvas center
+     * @param {PointerEvent} ev 
+     * @returns {Object} {originX, originY} offsets from canvas center
+     */
+    getPointerOrigin(ev) {
+        // Get XY coordinates from canvas center:
+        const vpt = this.getViewport();
+        const cvs = this.getCanvas();
+        const originX = ev.x - vpt.x - cvs.x - cvs.width / 2;
+        const originY = ev.y - vpt.y - cvs.y - cvs.height / 2;
+        return { originX, originY }
+    }
+
+    /**
+     * Get -1 or +1 integer delta from mousewheel 
+     * @param {PointerEvent} ev 
+     */
+    getWheelDelta(ev) {
+        const delta = Math.sign(-ev.deltaY);
+        return delta;
+    }
+
+    /**
+     * Calculate the new scale value by a given delta.
+     * The returned value is calmped my the defined min max options.
+     * @param {number} delta positive or negative integer 
+     * @returns {number} new scale value
+     */
+    calcScaleDelta(delta) {
+        const scale = this.scale * Math.exp(delta * this.scaleFactor);
+        const scaleNew = clamp(scale, this.scaleMin, this.scaleMax);
+        return scaleNew;
+    }
+
+    /**
+     * Apply new width and height to canvas
+     * (Also, update the scrollbars)
+     * @param {number} width 
+     * @param {number} height 
+     */
     resize(width, height) {
         this.width = width ?? this.width;
         this.height = height ?? this.height;
@@ -182,9 +234,11 @@ class ZoomPan {
         this.updateScrollbars();
     }
 
+    /**
+     * Fit ("contain") canvas into viewport center.
+     * Scale to fit original size (1.0) or less with "padd" spacing
+     */
     fit() {
-        // Fit into Viewport
-        // Scale to fit original size (1.0) or less (with padd around viewport if needed)
         const wRatio = this.elViewport.clientWidth / (this.elCanvas.clientWidth + this.padd * 2);
         const hRatio = this.elViewport.clientHeight / (this.elCanvas.clientHeight + this.padd * 2);
         const fitRatio = +Math.min(1, wRatio, hRatio).toFixed(1);
@@ -192,11 +246,19 @@ class ZoomPan {
         this.panTo(0, 0);
     }
 
+    /**
+     * Get client size and position of viewport
+     * @returns {object} {width,height,x,y} of the viewport Element
+     */
     getViewport() {
         const { width, height, x, y } = this.elViewport.getBoundingClientRect();
         return { width, height, x, y };
     }
 
+    /**
+     * Get canvas size and position relative to viewport
+     * @returns {object} {width,height,x,y} of the (scaled) canvas Element
+     */
     getCanvas() {
         const vpt = this.getViewport();
         const width = this.width * this.scale;
@@ -206,8 +268,14 @@ class ZoomPan {
         return { width, height, x, y };
     }
 
+    /**
+     * Get the immaginary area size
+     * PS: that area is just used to calculate the scrollbars
+     * and to prevent the canvas to fully exit the viewport
+     * (min visibility px defined by `padd`).
+     * @returns {object} {width,height} of the fictive area
+     */
     getArea() {
-        // Get fictive outer bounding scroll-area size.
         const vpt = this.getViewport();
         const cvs = this.getCanvas();
         const width = (vpt.width - this.padd) * 2 + cvs.width;
@@ -215,6 +283,10 @@ class ZoomPan {
         return { width, height };
     }
 
+    /**
+     * Repaint scrollbars.
+     * Use after the canvas changes position or scales.
+     */
     updateScrollbars() {
         const vpt = this.getViewport();
         const cvs = this.getCanvas();
@@ -223,25 +295,48 @@ class ZoomPan {
         const thumbSizeY = vpt.height ** 2 / area.height;
         const thumbPosX = (vpt.width - cvs.x - this.padd) / vpt.width * thumbSizeX;
         const thumbPosY = (vpt.height - cvs.y - this.padd) / vpt.height * thumbSizeY;
-        this.elThumbX.style.width = `${thumbSizeX / vpt.width * 100}%`;
-        this.elThumbX.style.left = `${thumbPosX / vpt.width * 100}%`;
-        this.elThumbY.style.height = `${thumbSizeY / vpt.height * 100}%`;
-        this.elThumbY.style.top = `${thumbPosY / vpt.height * 100}%`;
+        const widthPercent = thumbSizeX / vpt.width * 100;
+        const leftPercent = thumbPosX / vpt.width * 100;
+        const heightPercent = thumbSizeY / vpt.height * 100;
+        const topPercent = thumbPosY / vpt.height * 100
+        this.elThumbX.style.width = `${widthPercent}%`;
+        this.elThumbX.style.left = `${leftPercent}%`;
+        this.elThumbY.style.height = `${heightPercent}%`;
+        this.elThumbY.style.top = `${topPercent}%`;
     }
 
+    /**
+     * Apply canvas new scale by a given delta value (i.e: +1, -1, +2, ...)
+     * @param {number} delta 
+     */
     scaleDelta(delta) {
-        const scaleNew = this._calcScaleDelta(delta);
+        const scaleNew = this.calcScaleDelta(delta);
         this.scaleTo(scaleNew);
     }
 
+    /**
+     * Scale canvas element up
+     * Alias for scaling by delta +1
+     */
     scaleUp() {
         this.scaleDelta(1);
     }
 
+    /**
+     * Scale canvas element down
+     * Alias for scaling by delta -1
+     */
     scaleDown() {
         this.scaleDelta(-1);
     }
 
+    /**
+     * Apply a new scale at a given origin point relative from canvas center
+     * Useful when zooming in/out at a specific "anchor" point.
+     * @param {number} scaleNew 
+     * @param {number} originX Scale to X point (relative to canvas center)
+     * @param {number} originY Scale to Y point (relative to canvas center)
+     */
     scaleTo(scaleNew = 1, originX, originY) {
         this.scaleOld = this.scale;
         this.scale = clamp(scaleNew, this.scaleMin, this.scaleMax);
@@ -272,6 +367,25 @@ class ZoomPan {
         this.onScale();
     }
 
+    /**
+     * Apply scale from the mouse wheel Event at the given
+     *  pointer origin relative to canvas center.
+     * @param {WheelEvent} ev 
+     */
+    scaleWheel(ev) {
+        ev.preventDefault();
+        const delta = this.getWheelDelta(ev);
+        const scaleNew = this.calcScaleDelta(delta);
+        const { originX, originY } = this.getPointerOrigin(ev);
+        this.scaleTo(scaleNew, originX, originY);
+    }
+
+    /**
+     * Pan the canvas element to the new XY offset values
+     * PS: offsets are relative to the canvas center.
+     * @param {number} offsetX 
+     * @param {number} offsetY 
+     */
     panTo(offsetX, offsetY) {
         const vpt = this.getViewport();
         const width = this.width * this.scale;
@@ -288,45 +402,32 @@ class ZoomPan {
         this.onPan();
     }
 
+    /**
+     * Pan the canvas up by panStep px.
+     */
     panUp() {
         this.panTo(this.offsetX, this.offsetY - this.panStep);
     }
 
+    /**
+     * Pan the canvas down by panStep px.
+     */
     panDown() {
         this.panTo(this.offsetX, this.offsetY + this.panStep);
     }
 
+    /**
+     * Pan the canvas left by panStep px.
+     */
     panLeft() {
         this.panTo(this.offsetX - this.panStep, this.offsetY);
     }
 
+    /**
+     * Pan the canvas right by panStep px.
+     */
     panRight() {
         this.panTo(this.offsetX + this.panStep, this.offsetY);
-    }
-
-    _calcScaleDelta(delta) {
-        const scale = this.scale * Math.exp(delta * this.scaleFactor);
-        return clamp(scale, this.scaleMin, this.scaleMax);
-    }
-
-    _handleWheel(evt) {
-        evt.preventDefault();
-        const delta = Math.sign(-evt.deltaY);
-        const vpt = this.getViewport();
-        const cvs = this.getCanvas();
-        const scaleNew = this._calcScaleDelta(delta);
-        // Get XY coordinates from canvas center:
-        const originX = evt.x - vpt.x - cvs.x - cvs.width / 2;
-        const originY = evt.y - vpt.y - cvs.y - cvs.height / 2;
-
-        // this.scaleTo(scaleNew, originX, originY);
-        if (evt.shiftKey) {
-            this.panTo(this.offsetX - this.panStep * delta, this.offsetY);
-        } else if (evt.ctrlKey || evt.metaKey) {
-            this.scaleTo(scaleNew, originX, originY);
-        } else {
-            this.panTo(this.offsetX, this.offsetY + this.panStep * delta);
-        }
     }
 }
 
