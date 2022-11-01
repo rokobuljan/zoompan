@@ -5,6 +5,10 @@ Inspired by graphical editors like Photoshop.
 
 ![Zoom pan area - Image edit software scroll area](./zoompan.png)
 
+## Example
+
+See: `example/index.html` for a use-case.
+
 ## Setup
 
 **HTML:**
@@ -96,9 +100,7 @@ const ZP = new ZoomPan(someElement, {
 | `getWheelDelta(Event)`                | number                | Get wheel delta `+1` or `-1` on wheel-down     |
 | `calcScaleDelta(delta)`               | number                | Get the new scale value from delta             |
 
-## Example
 
-See: `example.html` for a use-case.
 
 ## TODO
 
