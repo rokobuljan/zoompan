@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <link rel="shortcut icon" href="#!" type="image/x-icon">
-    <title>Zoom Pan area by @rokobuljan</title>
-    <link rel="stylesheet" href="zoompan.css">
+    <title>ZoomPan - @rokobuljan</title>
+    <link rel="stylesheet" href="./../zoompan.css">
     <style>
         * {
             margin: 0;
@@ -15,15 +15,21 @@
 
         body {
             background: hsl(200, 4%, 16%);
-            font: 16px/1.3 sans-serif;
-            color: rgba(255,255,255,0.8);
+            font: 1rem/1.4 sans-serif;
+            color: rgba(255, 255, 255, 0.8);
             display: flex;
+        }
+
+        h1,
+        h2 {
+            color: #0bf;
+            font-weight: 100;
         }
 
         aside {
             flex: none;
-            width: 250px;
             padding: 2rem;
+            font-size: 0.8rem;
         }
 
         main {
@@ -68,11 +74,11 @@
 
         /* ZoomPan: Custom overrides: */
 
-        .zoompan-viewport {
-            background: hsl(200, 4%, 19%);
+        .zoompan {
+            background: rgba(0, 0, 0, 0.2);
         }
 
-        .zoompan-canvas {
+        .zoompan .zoompan-canvas {
             background-size: 50px 50px, 50px 50px, cover;
             background-image:
                 linear-gradient(to right, black 1px, transparent 1px),
@@ -93,9 +99,9 @@
                     hsl(360, 100%, 50%));
         }
 
-        .zoompan-track-x {
+        .zoompan .zoompan-track-x {
             /* Smaller track, to make space for #controls */
-            left: 150px !important;
+            left: 150px;
         }
     </style>
 </head>
@@ -107,21 +113,18 @@
         <br>
         Controls<br>
         <br>
-
-        <h2>Scale:</h2> 
+        <h2>Scale:</h2>
         Ctrl +<br>
         Ctrl -<br>
+        <br>
+        <h2>Scale from point:</h2>
         Ctrl WheelUp/Down<br>
-
         <br><br>
         <h2>Pan:</h2>
         WheelUp/Down<br>
         Shift WheelUp/Down<br>
-        Ctrl Drag<br>   
+        Ctrl Drag<br>
         Ctrl Arrows<br>
-        
-
-
     </aside>
 
     <main>
@@ -160,21 +163,29 @@
 
 
     <script type="module">
-        import ZoomPan from "./zoompan.js";
+        import ZoomPan from "./../zoompan.js";
+        // Let's also import a library to add hotkeys support
+        import { hotkeys } from "./lib/hotkeys.js";
 
+
+        // DOM helper functions:
         const el = (sel, par) => (par || document).querySelector(sel);
-        const elZoomPct = el("#zoomPct");
 
+
+        // Scale select box:
+        const elZoomPct = el("#zoomPct");
         const setSelectOptionText = (scale) => {
             const elOpt0 = el("option", elZoomPct);
             elOpt0.textContent = Math.round(scale * 100) + "%";
             elZoomPct.selectedIndex = 0;
         };
 
+
+        // Initialize ZoomPan with options
         const ZP = new ZoomPan("#myEditor", {
-            scale: 0.3,
-            width: 1800,
+            width: 800,
             height: 500,
+            canDrag: false, // We want to use "Ctrl" key to drag
             onInit() {
                 setSelectOptionText(this.scale);
             },
@@ -183,21 +194,28 @@
             }
         });
 
-        elZoomPct.addEventListener("input", () => {
-            ZP.scaleTo(+elZoomPct.value);
-        });
+        // UI inputs events:
+        elZoomPct.addEventListener("input", () => ZP.scaleTo(+elZoomPct.value));
+        el("#zoomIn").addEventListener("click", () => ZP.scaleUp());
+        el("#zoomOut").addEventListener("click", () => ZP.scaleDown());
+        el("#fit").addEventListener("click", () => ZP.fit());
 
-        el("#zoomIn").addEventListener("click", () => {
-            ZP.scaleUp();
-        });
+        // Setup hotkeys
+        const zoomPanHotKeys = hotkeys({
+            "ctrl wheelup": (ev) => ZP.scaleWheel(ev),
+            "ctrl wheeldown": (ev) => ZP.scaleWheel(ev),
+            "ctrl +": () => ZP.scaleUp(),
+            "ctrl -": () => ZP.scaleDown(),
+            "ctrl arrowup": () => ZP.panDown(),
+            "ctrl arrowdown": () => ZP.panUp(),
+            "ctrl arrowleft": () => ZP.panRight(),
+            "ctrl arrowright": () => ZP.panLeft(),
+        }, ZP.elViewport);
+        // Drag area (viewport) only on ctrl key pressed:
+        const toggleCanvasDrag = (ev) => ZP.canDrag = ev.ctrlKey;
+        addEventListener("keydown", toggleCanvasDrag);
+        addEventListener("keyup", toggleCanvasDrag);
 
-        el("#zoomOut").addEventListener("click", () => {
-            ZP.scaleDown();
-        });
-
-        el("#fit").addEventListener("click", () => {
-            ZP.fit("cover");
-        });
     </script>
 </body>
 

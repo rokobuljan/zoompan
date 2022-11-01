@@ -58,11 +58,14 @@ const ZP = new ZoomPan(someElement, {
 | `offsetX`     | Number  | `0`     | Canvas offset X (from center)         |
 | `offsetY`     | Number  | `0`     | Canvas offset Y (from center)         |
 | `scale`       | Number  | `1`     | Initial Scale (if not fitted on init) |
-| `fitOnInit`   | Boolean | `true`  | Fix canvas into viewport on init      |
+| `scaleOld`    | Number  | `scale` | Old Scale value (before changed)      |
 | `scaleFactor` | Number  | `0.2`   | Scale factor                          |
 | `scaleMin`    | Number  | `0.05`  | Scale min value                       |
 | `scaleMax`    | Number  | `10`    | Scale max value                       |
 | `padd`        | Number  | `40`    | Min visible canvas padd               |
+| `panStep`     | Number  | `50`    | Pixels pan step value                 |
+| `fitOnInit`   | Boolean | `true`  | Fix canvas into viewport on init      |
+| `canDrag`     | Boolean | `true`  | If canvas can be pointer-dragged      |
 
 ## Options &mdash; Events
 
@@ -74,29 +77,24 @@ const ZP = new ZoomPan(someElement, {
 | `onPanStart()` | Triggered on pan (pointerdown)   |
 | `onPanEnd()`   | Triggered on pan (pointerup)     |
 
-## Properties
-
-| Name       | Type   | Description                |
-| ---------- | ------ | -------------------------- |
-| `scaleOld` | Number | Scale value before changed |
-
-
-
 ## Methods
 
-| Name                                  | Returns               | Description                                 |
-| ------------------------------------- | --------------------- | ------------------------------------------- |
-| `panTo(offsetX, offsetY)`             |                       | Pan canvas to new offset (from center)      |
-| `scaleTo(scale [, originX, originY])` |                       | Scale canvas to value (origin from center)  |
-| `scaleUp()`                           |                       | Scale up. Alias for `scaleDelta(1)`         |
-| `scaleDown()`                         |                       | Scale down. Alias for `scaleDelta(-1)`      |
-| `scaleDelta(delta)`                   |                       | Scale by delta                              |
-| `fit()`                               |                       | Fit canvas into viewport center (*contain*) |
-| `resize(width, height)`               |                       | Change canvas width and height              |
-| `updateScrollbars()`                  |                       | Reposition and resize scrollbars            |
-| `getCanvas()`                         | {x, y, width, height} | Get Canvas data                             |
-| `getViewport()`                       | {x, y, width, height} | Get Viewport data                           |
-| `getArea()`                           | {width, height}       | Get fictive *"scroll area"* size            |
+| Name                                  | Returns               | Description                                    |
+| ------------------------------------- | --------------------- | ---------------------------------------------- |
+| `panTo(offsetX, offsetY)`             |                       | Pan canvas to new offset (canvas center)       |
+| `scaleTo(scale [, originX, originY])` |                       | Scale canvas from point origin (canvas center) |
+| `scaleUp()`                           |                       | Scale up. Alias for `scaleDelta(1)`            |
+| `scaleDown()`                         |                       | Scale down. Alias for `scaleDelta(-1)`         |
+| `scaleDelta(delta)`                   |                       | Scale by delta                                 |
+| `resize(width, height)`               |                       | Change canvas `width` and `height`             |
+| `updateScrollbars()`                  |                       | Reposition and resize scrollbars               |
+| `fit()`                               |                       | Fit canvas into viewport center (*contain*)    |
+| `getArea()`                           | {width, height}       | Get fictive *"scroll area"* size               |
+| `getCanvas()`                         | {x, y, width, height} | Get Canvas data                                |
+| `getViewport()`                       | {x, y, width, height} | Get Viewport data                              |
+| `getPointerOrigin(Event)`             | {originX, originY}    | Get pointer XY relative to viewport center     |
+| `getWheelDelta(Event)`                | number                | Get wheel delta `+1` or `-1` on wheel-down     |
+| `calcScaleDelta(delta)`               | number                | Get the new scale value from delta             |
 
 ## Example
 
@@ -104,8 +102,7 @@ See: `example.html` for a use-case.
 
 ## TODO
 
-- Keyboard support
-- Pinch zoom
+- Pinch scale
 
 ### Licence
 
