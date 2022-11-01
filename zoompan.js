@@ -1,20 +1,18 @@
-// Utility, helper functions
-
-const sortIns = (a, b) => a.localeCompare(b, 0, { sensitivity: 'base' });
-const isTargetEditable = (evt) => /^(INPUT|TEXTAREA)$/.test(evt.target.tagName) || evt.target.closest("[contenteditable]");
-const aliasCtrl = (key) => key.replace(/\b(control|meta)\b/ig, "ctrl");
-const arrToStrSorted = (arr) => arr.sort(sortIns).join(" ").toLowerCase();
-const strToEvtName = (str) => arrToStrSorted(aliasCtrl(str).trim().split(/ +/));
-
 /**
- * Hotkeys
+ * Hotkeys singleton.
  * Assign callback functions to be triggered on
  * any combo keyboard as hotkey.
  * @param {object} data {"a b c": fn,} Object of key combo keys with the specific 
- * @param {HTMLElement|window} elementListener Element target to receive events (or default to `window`)
+ * @param {HTMLElement|window} elementListener Element target to receive wheel events (default: `window`)
  * @returns {object} the currently assigned hotkeys `lib` and the `off("combo keys", fb)` method to remove listeners. 
  */
 const hotkeys = (data, elementListener = window) => {
+    const sortIns = (a, b) => a.localeCompare(b, 0, { sensitivity: 'base' });
+    const isTargetEditable = (evt) => /^(INPUT|TEXTAREA)$/.test(evt.target.tagName); // || evt.target.closest("[contenteditable]")
+    const aliasCtrl = (key) => key.replace(/\b(control|meta)\b/ig, "ctrl");
+    const strToEvtName = (str) => arrToStrSorted(aliasCtrl(str).trim().split(/ +/));
+    const arrToStrSorted = (arr) => arr.sort(sortIns).join(" ").toLowerCase();
+
     const pressedKeys = new Set();
     const lib = {};
 
@@ -52,8 +50,8 @@ const hotkeys = (data, elementListener = window) => {
         pressedKeys.delete(aliasCtrl(ev.key));
     });
 
-    const off = (name, fn) => {
-        name = strToEvtName(name);
+    const off = (_name, fn) => {
+        const name = strToEvtName(_name);
         const evtIndex = lib[name]?.findIndex(fn);
         if (evtIndex < 0) {
             return;
@@ -64,13 +62,28 @@ const hotkeys = (data, elementListener = window) => {
         }
     };
 
+    const isActive = (_name) => {
+        const name = strToEvtName(_name);
+        return pressedKeys.has(name);
+    }
+
     return {
         lib,
         off,
+        isActive,
     };
 };
 
-const pointerHandler = (el, evFn = {}) => {
+/*
+ * ZoomPan
+ */
+
+// Helper functions
+
+const el = (sel, par) => (par || document).querySelector(sel);
+const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+const noop = () => { };
+const dragHandler = (el, evFn = {}) => {
     const onUp = (evt) => {
         removeEventListener("pointermove", evFn.onMove);
         removeEventListener("pointerup", onUp);
@@ -83,12 +96,6 @@ const pointerHandler = (el, evFn = {}) => {
         evFn.onDown?.(evt);
     });
 };
-
-
-
-const el = (sel, par) => (par || document).querySelector(sel);
-const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
-const noop = () => { };
 
 class ZoomPan {
 
@@ -124,15 +131,48 @@ class ZoomPan {
 
         this.elParent.classList.add("zoompan");
 
-        pointerHandler(this.elViewport, {
+        // Apply width height to canvas...
+        this.resize();
+        // ...and fit to viewport, or use option's scale and pan
+        if (this.fitOnInit) {
+            this.fit();
+        } else {
+            this.scaleTo(this.scale);
+            this.panTo(this.offsetX, this.offsetY);
+        }
+
+        // Setup hotkeys:
+        this.hotkeys = Object.assign({
+            scaleUp: ["ctrl +"],
+            scaleDown: ["ctrl -"],
+            panUp: ["ctrl arrowdown", "wheeldown"],
+            panDown: ["ctrl arrowup", "wheelup"],
+            panLeft: ["ctrl arrowright", "shift wheeldown"],
+            panRight: ["ctrl arrowleft", "shift wheelup"],
+            scaleWheel: ["ctrl wheelup", "ctrl wheeldown"],
+            pan: ["ctrl"]
+        }, options.hotkeys);
+
+        // Apply hotkeys:
+        const hotkeysToFunctions = Object.entries(this.hotkeys).reduce((ob, [fnName, hkArr]) => {
+            hkArr.forEach(hk => { ob[hk] = this[fnName].bind(this) });
+            return ob;
+        }, {});
+        const hk = hotkeys(hotkeysToFunctions, this.elViewport);
+
+        // Canvas drag:
+        dragHandler(this.elViewport, {
             onDown: () => this.onPanStart(),
             onUp: () => this.onPanEnd(),
             onMove: (ev) => {
-                this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
+                if (this.hotkeys.pan[0] === "" || hk.isActive(this.hotkeys.pan[0])) {
+                    this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
+                }
             }
         });
 
-        pointerHandler(this.elTrackX, {
+        // Horizontal scrollbar track drag:
+        dragHandler(this.elTrackX, {
             onDown: () => this.onPanStart(),
             onUp: () => this.onPanEnd(),
             onMove: (ev) => {
@@ -141,7 +181,8 @@ class ZoomPan {
             }
         });
 
-        pointerHandler(this.elTrackY, {
+        // Vertical scrollbar track drag:
+        dragHandler(this.elTrackY, {
             onDown: () => this.onPanStart(),
             onUp: () => this.onPanEnd(),
             onMove: (ev) => {
@@ -150,38 +191,17 @@ class ZoomPan {
             }
         });
 
-        addEventListener("resize", () => this.panTo(this.offsetX, this.offsetY));
-
-        // Init
-
-        this.resize();
-
-        if (this.fitOnInit) {
-            this.fit();
-        } else {
-            this.scaleTo(this.scale);
+        // Fix pan on browser resize
+        addEventListener("resize", () => {
             this.panTo(this.offsetX, this.offsetY);
-        }
-
-        hotkeys({
-            "ctrl +": ev => this.scaleUp(),
-            "ctrl -": ev => this.scaleDown(),
-            "ctrl arrowup": ev => this.panDown(),
-            "ctrl arrowdown": ev => this.panUp(),
-            "ctrl arrowleft": ev => this.panRight(),
-            "ctrl arrowright": ev => this.panLeft(),
         });
 
-        hotkeys({
-            "wheelup": ev => this.panDown(),
-            "wheeldown": ev => this.panUp(),
-            "shift wheelup": ev => this.panLeft(),
-            "shift wheeldown": ev => this.panRight(),
-            "ctrl wheelup": ev => this.scaleWheel(ev),
-            "ctrl wheeldown": ev => this.scaleWheel(ev),
-        }, this.elViewport);
-
+        // Emit init is done: 
         this.onInit();
+    }
+
+    pan(ev) {
+        // console.log(ev)
     }
 
     /**

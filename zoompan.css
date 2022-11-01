@@ -4,12 +4,16 @@
  * Basic template styles:
  */
 
+:root {
+    --scrollHeight: 14px;
+}
+
 .zoompan-viewport {
     position: relative;
     display: flex;
     overflow: hidden;
-    width: 100%;
-    height: 100%;
+    width: calc(100% - var(--scrollHeight));
+    height: calc(100% - var(--scrollHeight));
     align-items: center;
     justify-content: center;
     touch-action: none;
@@ -22,10 +26,10 @@
 
 .zoompan-track-x {
     position: absolute;
-    top: 100%;
+    bottom: 0;
     left: 0;
-    height: 14px;
-    width: 100%;
+    right: var(--scrollHeight);
+    height: var(--scrollHeight);
     background: rgba(0, 0, 0, 0.3);
     touch-action: none;
 }
@@ -33,9 +37,9 @@
 .zoompan-track-y {
     position: absolute;
     top: 0;
-    left: 100%;
-    width: 14px;
-    height: 100%;
+    right: 0;
+    width: var(--scrollHeight);
+    bottom: var(--scrollHeight);
     background: rgba(0, 0, 0, 0.3);
     touch-action: none;
 }
