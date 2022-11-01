@@ -26,6 +26,10 @@
             font-weight: 100;
         }
 
+        h1 {
+            font-size: 2rem;
+        }
+
         aside {
             flex: none;
             padding: 2rem;
@@ -121,10 +125,10 @@
         Ctrl WheelUp/Down<br>
         <br><br>
         <h2>Pan:</h2>
-        WheelUp/Down<br>
-        Shift WheelUp/Down<br>
         Ctrl Drag<br>
         Ctrl Arrows<br>
+        WheelUp/Down<br>
+        Shift WheelUp/Down<br>
     </aside>
 
     <main>
@@ -210,6 +214,10 @@
             "ctrl arrowdown": () => ZP.panUp(),
             "ctrl arrowleft": () => ZP.panRight(),
             "ctrl arrowright": () => ZP.panLeft(),
+            "wheelup": (ev) => ZP.panDown(),
+            "wheeldown": (ev) => ZP.panUp(),
+            "shift wheelup": (ev) => ZP.panRight(),
+            "shift wheeldown": (ev) => ZP.panLeft(),
         }, ZP.elViewport);
         // Drag area (viewport) only on ctrl key pressed:
         const toggleCanvasDrag = (ev) => ZP.canDrag = ev.ctrlKey;
