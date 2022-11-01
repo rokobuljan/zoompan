@@ -104,7 +104,7 @@ const ZP = new ZoomPan(someElement, {
 
 ## TODO
 
-- Pinch scale
+- Create NPM package
 
 ### Licence
 
