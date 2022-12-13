@@ -212,9 +212,7 @@
         });
 
         // Allow dragging only while Ctrl key is pressed
-        ZP.elViewport.addEventListener("pointermove", (ev) => {
-            ZP.canDrag = ev.ctrlKey;
-        });
+        ZP.elViewport.addEventListener("pointermove", (ev) => ZP.canDrag = ev.ctrlKey );
 
         // Example calling ZP methods on specific hotkeys
         // This example uses an external library for hotkeys 

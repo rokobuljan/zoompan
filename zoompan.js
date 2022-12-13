@@ -29,43 +29,52 @@ class ZoomPan {
 
     constructor(selector, options = {}) {
 
-        Object.assign(this, {
-            width: 800, // Canvas width
-            height: 600, // Canvas height
-            offsetX: 0, // Pan offset. 0 = From canvas center
-            offsetY: 0,
-            scale: 1,
-            scaleOld: 1,
-            scaleMax: 10,
-            scaleMin: 0.05,
-            scaleFactor: 0.2,
-            padd: 40,
-            panStep: 50,
-            fitOnInit: true,
-            canDrag: true,
-            canPinch: true,
-            isDrag: false,
-            onPan: noop,
-            onPanStart: noop,
-            onPanEnd: noop,
-            onScale: noop,
-            onInit: noop,
-        }, options, {
-            pinchDistance: 0, // Distance between two pointers
-        });
-
-        this.elParent = typeof selector === "string" ? el(selector) : selector;
-        this.elViewport = el(".zoompan-viewport", this.elParent);
-        this.elCanvas = el(".zoompan-canvas", this.elParent);
-        this.elTrackX = el(".zoompan-track-x", this.elParent);
-        this.elThumbX = el(".zoompan-thumb-x", this.elParent);
-        this.elTrackY = el(".zoompan-track-y", this.elParent);
-        this.elThumbY = el(".zoompan-thumb-y", this.elParent);
+        Object.assign(
+            this,
+            // Defaults
+            {
+                width: 800, // Canvas width
+                height: 600, // Canvas height
+                offsetX: 0, // Pan offset. 0 = From canvas center
+                offsetY: 0,
+                scale: 1,
+                scaleOld: 1,
+                scaleMax: 10,
+                scaleMin: 0.05,
+                scaleFactor: 0.2,
+                scaleTransition: 250,
+                padd: 40,
+                panStep: 50,
+                fitOnInit: true,
+                canDrag: true,
+                canPinch: true,
+                isDrag: false,
+                onPan: noop,
+                onPanStart: noop,
+                onPanEnd: noop,
+                onScale: noop,
+                onInit: noop,
+            },
+            // User overrides:
+            options,
+            // Overrides:
+            {
+                pinchDistance: 0, // Distance between two pointers
+                elParent: typeof selector === "string" ? el(selector) : selector,
+                elViewport: el(".zoompan-viewport", this.elParent),
+                elCanvas: el(".zoompan-canvas", this.elParent),
+                elTrackX: el(".zoompan-track-x", this.elParent),
+                elThumbX: el(".zoompan-thumb-x", this.elParent),
+                elTrackY: el(".zoompan-track-y", this.elParent),
+                elThumbY: el(".zoompan-thumb-y", this.elParent),
+                _isWheel: false,
+            });
 
         this.elParent.classList.add("zoompan");
 
         // Apply width height to canvas...
         this.resize();
+
         // ...and fit to viewport, or use option's scale and pan
         if (this.fitOnInit) {
             this.fit();
@@ -380,7 +389,20 @@ class ZoomPan {
         }
 
         this.elCanvas.style.scale = this.scale;
-        this.onScale();
+
+        // Animate canvas on mousewheel scale
+        if (this._isWheel && this.scaleTransition > 0 ) {
+            this.elCanvas.style.transition = `scale ${this.scaleTransition}ms, translate ${this.scaleTransition}ms`;
+            this.elCanvas.addEventListener("transitionend", () => {
+                // Reset to 0 so further panning will not be affected
+                this.elCanvas.style.transition = `scale 0ms, translate 0ms`;
+                this.onScale();
+            }, { once: true });
+        } else {
+            this.onScale();
+        }
+
+        this._isWheel = false;
     }
 
     /**
@@ -393,6 +415,7 @@ class ZoomPan {
         const delta = this.getWheelDelta(ev);
         const scaleNew = this.calcScaleDelta(delta);
         const { originX, originY } = this.getPointerOrigin(ev);
+        this._isWheel = true;
         this.scaleTo(scaleNew, originX, originY);
     }
 
