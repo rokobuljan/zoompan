@@ -122,25 +122,25 @@
 
     <aside>
         <h1>ZoomPan</h1>
+
         <br>
-        Controls<br>
+        In this example we respect the user experience by the way browsers wheel and keyboard shortcuts already handle scaling and scrolling.
+        You can always change and customize this hotkeys as desired.
         <br>
-        <h2>Scale:</h2>
+        <br>
+        <h3>Controls</h3>
+        <br>
+        <h2>Scale</h2>
+        Ctrl WheelUp/Down<br>
         Ctrl +<br>
         Ctrl -<br>
+        Pinch<br>
         <br>
-        <h2>Scale from point:</h2>
-        Ctrl WheelUp/Down<br>
-        <br><br>
-        <h2>Pan:</h2>
+        <h2>Pan</h2>
         Ctrl Drag<br>
         Ctrl Arrows<br>
         WheelUp/Down<br>
         Shift WheelUp/Down<br>
-        <br>
-        <br>
-        In this example we respect the user experience by the way browsers wheel and keyboard shortcuts already handle scaling and scrolling.  
-        You can always change and customize this hotkeys as desired.
 
         <footer>
             Git: <a href="https://github.com/rokobuljan/zoompan">ZoomPan</a><br>
@@ -182,13 +182,9 @@
         </div>
     </main>
 
-
-
     <script type="module">
         import ZoomPan from "./../zoompan.js";
-        // Let's also import a library to add hotkeys support
         import { hotkeys } from "./lib/hotkeys.js";
-
 
         // DOM helper functions:
         const el = (sel, par) => (par || document).querySelector(sel);
@@ -202,12 +198,11 @@
             elZoomPct.selectedIndex = 0;
         };
 
-
         // Initialize ZoomPan with options
         const ZP = new ZoomPan("#myEditor", {
             width: 800,
             height: 500,
-            canDrag: false, // We want to use "Ctrl" key to drag
+            canDrag: false, // We want to use "Ctrl" key to drag-pan (See below)
             onInit() {
                 setSelectOptionText(this.scale);
             },
@@ -216,14 +211,14 @@
             }
         });
 
-        // UI inputs events:
-        elZoomPct.addEventListener("input", () => ZP.scaleTo(+elZoomPct.value));
-        el("#zoomIn").addEventListener("click", () => ZP.scaleUp());
-        el("#zoomOut").addEventListener("click", () => ZP.scaleDown());
-        el("#fit").addEventListener("click", () => ZP.fit());
+        // Allow dragging only while Ctrl key is pressed
+        ZP.elViewport.addEventListener("pointermove", (ev) => {
+            ZP.canDrag = ev.ctrlKey;
+        });
 
-        // Setup hotkeys
-        const zoomPanHotKeys = hotkeys({
+        // Example calling ZP methods on specific hotkeys
+        // This example uses an external library for hotkeys 
+        hotkeys({
             "ctrl wheelup": (ev) => ZP.scaleWheel(ev),
             "ctrl wheeldown": (ev) => ZP.scaleWheel(ev),
             "ctrl +": () => ZP.scaleUp(),
@@ -232,15 +227,17 @@
             "ctrl arrowdown": () => ZP.panUp(),
             "ctrl arrowleft": () => ZP.panRight(),
             "ctrl arrowright": () => ZP.panLeft(),
-            "wheelup": (ev) => ZP.panDown(),
-            "wheeldown": (ev) => ZP.panUp(),
-            "shift wheelup": (ev) => ZP.panRight(),
-            "shift wheeldown": (ev) => ZP.panLeft(),
+            "wheelup": () => ZP.panDown(),
+            "wheeldown": () => ZP.panUp(),
+            "shift wheelup": () => ZP.panRight(),
+            "shift wheeldown": () => ZP.panLeft(),
         }, ZP.elViewport);
-        // Drag area (viewport) only on ctrl key pressed:
-        const toggleCanvasDrag = (ev) => ZP.canDrag = ev.ctrlKey;
-        addEventListener("keydown", toggleCanvasDrag);
-        addEventListener("keyup", toggleCanvasDrag);
+
+        // UI inputs events:
+        elZoomPct.addEventListener("input", () => ZP.scaleTo(+elZoomPct.value));
+        el("#zoomIn").addEventListener("click", () => ZP.scaleUp());
+        el("#zoomOut").addEventListener("click", () => ZP.scaleDown());
+        el("#fit").addEventListener("click", () => ZP.fit());
 
     </script>
 </body>

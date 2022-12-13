@@ -7,16 +7,20 @@
 const el = (sel, par) => (par || document).querySelector(sel);
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 const noop = () => { };
+const pointsDistance = (x1, x2, y1, y2) => Math.hypot(x2 - x1, y2 - y1);
+
 const dragHandler = (el, evFn = {}) => {
     const onUp = (evt) => {
         removeEventListener("pointermove", evFn.onMove);
         removeEventListener("pointerup", onUp);
+        removeEventListener("pointercancel", onUp);
         evFn.onUp?.(evt);
     };
     el.addEventListener("pointerdown", (evt) => {
         evt.preventDefault();
         addEventListener("pointermove", evFn.onMove);
         addEventListener("pointerup", onUp);
+        addEventListener("pointercancel", onUp);
         evFn.onDown?.(evt);
     });
 };
@@ -39,12 +43,16 @@ class ZoomPan {
             panStep: 50,
             fitOnInit: true,
             canDrag: true,
+            canPinch: true,
+            isDrag: false,
             onPan: noop,
             onPanStart: noop,
             onPanEnd: noop,
             onScale: noop,
             onInit: noop,
-        }, options);
+        }, options, {
+            pinchDistance: 0, // Distance between two pointers
+        });
 
         this.elParent = typeof selector === "string" ? el(selector) : selector;
         this.elViewport = el(".zoompan-viewport", this.elParent);
@@ -66,19 +74,102 @@ class ZoomPan {
             this.panTo(this.offsetX, this.offsetY);
         }
 
-        // Canvas drag:
-        dragHandler(this.elViewport, {
-            onDown: () => this.onPanStart(),
-            onUp: () => this.onPanEnd(),
-            onMove: (ev) => {
-                // PS: canDrag is default to true, but if one wants to use i.e: Ctrl key
-                // in order to drag the area, set the default to false and than manually
-                // change it to true on Ctrl key press.
-                if (this.canDrag) {
-                    this.panTo(this.offsetX + ev.movementX, this.offsetY + ev.movementY);
-                }
+        // Pointers
+
+        const pointers = {
+            mouse: new Map(),
+            touch: new Map(),
+        };
+
+        const pointersUpdate = (ev) => pointers[ev.pointerType].set(ev.pointerId, ev);
+        const pointersDelete = (ev) => pointers[ev.pointerType].delete(ev.pointerId);
+
+        const handlePointer = (ev) => {
+            // Just keep in mind that this function can be called sequentially on  
+            // multiple pointers-move. If you understand that, you're good to go.
+
+            const pointersType = pointers[ev.pointerType];
+            const pointsEvts = pointersType.values();
+            const pointersTot = pointersType.size;
+            const isPinch = pointersTot === 2;
+
+            const pointer1 = pointsEvts.next().value;
+            const pointer2 = pointsEvts.next().value;
+
+            let movementX = 0;
+            let movementY = 0;
+
+            if (!isPinch) {
+                movementX = pointer1.movementX;
+                movementY = pointer1.movementY;
             }
-        });
+            else if (this.canPinch && ev === pointer2) {
+                movementX = (pointer1.movementX + pointer2.movementX) / 2;
+                movementY = (pointer1.movementY + pointer2.movementY) / 2;
+                const pointM = { // Get XY of pinch center point
+                    x: pointer1.x + (pointer2.x - pointer1.x) * 0.5,
+                    y: pointer1.y + (pointer2.y - pointer1.y) * 0.5,
+                };
+
+                const pinchDistanceNew = pointsDistance(pointer2.x, pointer1.x, pointer2.y, pointer1.y);
+                const pinchDistanceOld = this.pinchDistance || pinchDistanceNew;
+                const pinchDistanceDiff = pinchDistanceNew - pinchDistanceOld;
+                this.pinchDistance = pinchDistanceNew;
+                const delta = pinchDistanceDiff * 0.025;
+                const newScale = this.calcScaleDelta(delta);
+                const { originX, originY } = this.getPointerOrigin(pointM);
+
+                this.scaleTo(newScale, originX, originY);
+            }
+
+            // PS: canDrag is default to true, but if one wants to use i.e: Ctrl key
+            // in order to drag the area, set the default to false and than manually
+            // change it to true on Ctrl key press.
+            if (this.canDrag) {
+                this.panTo(this.offsetX + movementX, this.offsetY + movementY);
+            }
+        };
+
+        const onStart = (ev) => {
+            ev.preventDefault();
+            pointersUpdate(ev);
+
+            this.isDrag = true;
+
+            addEventListener("pointermove", onMove);
+            addEventListener("pointerup", onEnd);
+            addEventListener("pointercancel", onEnd);
+
+            this.onPanStart(ev);
+        };
+
+        const onMove = (ev) => {
+            pointersUpdate(ev);
+            handlePointer(ev);
+        };
+
+        const onEnd = (ev) => {
+            pointersDelete(ev);
+
+            const pointersType = pointers[ev.pointerType];
+            const pointersTot = pointersType.size;
+
+            if (pointersTot < 2) {
+                this.pinchDistance = 0;
+            }
+
+            if (pointersTot === 0) {
+                this.isDrag = false;
+
+                removeEventListener("pointermove", onMove);
+                removeEventListener("pointerup", onEnd);
+                removeEventListener("pointercancel", onEnd);
+            }
+
+            this.onPanEnd();
+        };
+
+        this.elViewport.addEventListener("pointerdown", onStart, { passive: false });
 
         // Horizontal scrollbar track drag:
         dragHandler(this.elTrackX, {
@@ -112,7 +203,7 @@ class ZoomPan {
     /**
      * Get pointer origin XY from pointer position
      * relative from canvas center
-     * @param {PointerEvent} ev 
+     * @param {PointerEvent|Object} ev Event with x,y pointer coordinates of Object {x,y}
      * @returns {Object} {originX, originY} offsets from canvas center
      */
     getPointerOrigin(ev) {
@@ -126,7 +217,7 @@ class ZoomPan {
 
     /**
      * Get -1 or +1 integer delta from mousewheel 
-     * @param {PointerEvent} ev 
+     * @param {PointerEvent|Object} ev Event with deltaY of Object with the same deltaY property
      */
     getWheelDelta(ev) {
         const delta = Math.sign(-ev.deltaY);

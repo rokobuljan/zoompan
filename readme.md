@@ -70,6 +70,7 @@ const ZP = new ZoomPan(someElement, {
 | `panStep`     | Number  | `50`    | Pixels pan step value                 |
 | `fitOnInit`   | Boolean | `true`  | Fix canvas into viewport on init      |
 | `canDrag`     | Boolean | `true`  | If canvas can be pointer-dragged      |
+| `canPinch`    | Boolean | `true`  | Allow two-finger pinch                |
 
 ## Options &mdash; Events
 
