@@ -48,18 +48,16 @@ class ZoomPan {
                 fitOnInit: true,
                 canDrag: true,
                 canPinch: true,
-                isDrag: false,
                 onPan: noop,
                 onPanStart: noop,
                 onPanEnd: noop,
                 onScale: noop,
                 onInit: noop,
             },
-            // User overrides:
+            // User options:
             options,
             // Overrides:
             {
-                pinchDistance: 0, // Distance between two pointers
                 elParent: typeof selector === "string" ? el(selector) : selector,
                 elViewport: el(".zoompan-viewport", this.elParent),
                 elCanvas: el(".zoompan-canvas", this.elParent),
@@ -67,7 +65,9 @@ class ZoomPan {
                 elThumbX: el(".zoompan-thumb-x", this.elParent),
                 elTrackY: el(".zoompan-track-y", this.elParent),
                 elThumbY: el(".zoompan-thumb-y", this.elParent),
-                _isWheel: false,
+                pinchDistance: 0, // Distance between two pointers
+                isDrag: false,
+                isPinch: false,
             });
 
         this.elParent.classList.add("zoompan");
@@ -100,7 +100,7 @@ class ZoomPan {
             const pointersType = pointers[ev.pointerType];
             const pointsEvts = pointersType.values();
             const pointersTot = pointersType.size;
-            const isPinch = pointersTot === 2;
+            this.isPinch = pointersTot === 2;
 
             const pointer1 = pointsEvts.next().value;
             const pointer2 = pointsEvts.next().value;
@@ -108,7 +108,7 @@ class ZoomPan {
             let movementX = 0;
             let movementY = 0;
 
-            if (!isPinch) {
+            if (!this.isPinch) {
                 movementX = pointer1.movementX;
                 movementY = pointer1.movementY;
             }
@@ -182,8 +182,14 @@ class ZoomPan {
 
         // Horizontal scrollbar track drag:
         dragHandler(this.elTrackX, {
-            onDown: () => this.onPanStart(),
-            onUp: () => this.onPanEnd(),
+            onDown: () => {
+                this.isDrag = true;
+                this.onPanStart();
+            },
+            onUp: () => {
+                this.isDrag = false;
+                this.onPanEnd();
+            },
             onMove: (ev) => {
                 const area = this.getArea();
                 this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
@@ -192,8 +198,14 @@ class ZoomPan {
 
         // Vertical scrollbar track drag:
         dragHandler(this.elTrackY, {
-            onDown: () => this.onPanStart(),
-            onUp: () => this.onPanEnd(),
+            onDown: () => {
+                this.isDrag = true;
+                this.onPanStart();
+            },
+            onUp: () => {
+                this.isDrag = false;
+                this.onPanEnd();
+            },
             onMove: (ev) => {
                 const area = this.getArea();
                 this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
@@ -383,31 +395,16 @@ class ZoomPan {
             const xDiff = originX - xNew;
             const yDiff = originY - yNew;
 
-            this.panTo(this.offsetX + xDiff, this.offsetY + yDiff);
-        } else {
-            this.updateScrollbars();
+            this.panTo(this.offsetX + xDiff, this.offsetY + yDiff, false);
         }
 
-        this.elCanvas.style.scale = this.scale;
-
-        // Animate canvas on mousewheel scale
-        if (this._isWheel && this.scaleTransition > 0 ) {
-            this.elCanvas.style.transition = `scale ${this.scaleTransition}ms, translate ${this.scaleTransition}ms`;
-            this.elCanvas.addEventListener("transitionend", () => {
-                // Reset to 0 so further panning will not be affected
-                this.elCanvas.style.transition = `scale 0ms, translate 0ms`;
-                this.onScale();
-            }, { once: true });
-        } else {
-            this.onScale();
-        }
-
-        this._isWheel = false;
+        this.transform();
+        this.onScale();
     }
 
     /**
      * Apply scale from the mouse wheel Event at the given
-     *  pointer origin relative to canvas center.
+     * pointer origin relative to canvas center.
      * @param {WheelEvent} ev 
      */
     scaleWheel(ev) {
@@ -415,7 +412,7 @@ class ZoomPan {
         const delta = this.getWheelDelta(ev);
         const scaleNew = this.calcScaleDelta(delta);
         const { originX, originY } = this.getPointerOrigin(ev);
-        this._isWheel = true;
+        this.elCanvas.transformOrigin = `${originX}`
         this.scaleTo(scaleNew, originX, originY);
     }
 
@@ -424,8 +421,9 @@ class ZoomPan {
      * PS: offsets are relative to the canvas center.
      * @param {number} offsetX 
      * @param {number} offsetY 
+     * @param {boolean} isTransform Set to false if you're already applying transformations from the scaleTo function
      */
-    panTo(offsetX, offsetY) {
+    panTo(offsetX, offsetY, isTransform = true) {
         const vpt = this.getViewport();
         const width = this.width * this.scale;
         const height = this.height * this.scale;
@@ -435,10 +433,24 @@ class ZoomPan {
         const spaceY = vpt.height / 2 + height / 2 - this.padd;
         this.offsetX = clamp(offsetX, -spaceX, spaceX);
         this.offsetY = clamp(offsetY, -spaceY, spaceY);
-        this.updateScrollbars();
 
-        this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
+        if (isTransform) this.transform();
         this.onPan();
+    }
+
+    transform() {
+        const scaleDuration = this.isPinch || this.isDrag ? 0 : this.scaleTransition;
+        const translateDuration = this.isDrag ? 0 : this.scaleTransition;
+
+        this.elCanvas.style.transition = `scale ${scaleDuration}ms, translate ${translateDuration}ms`;
+        this.elCanvas.addEventListener("transitionend", () => {
+            this.elCanvas.style.transition = `scale 0, translate 0`;
+        }, { once: true });
+
+        this.elCanvas.style.scale = this.scale;
+        this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
+
+        this.updateScrollbars();
     }
 
     /**
