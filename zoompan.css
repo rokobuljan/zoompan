@@ -22,6 +22,7 @@
 .zoompan-canvas {
     flex: none;
     transform-origin: center;
+    backface-visibility: hidden;
 }
 
 .zoompan-track-x {
