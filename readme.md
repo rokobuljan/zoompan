@@ -57,33 +57,33 @@ const ZP = new ZoomPan(someElement, {
 
 ## Options
 
-| Name              | Type    | Default | Description                                     |
-| ----------------- | ------- | ------- | ----------------------------------------------- |
-| `width`           | Number  | `800`   | Canvas width                                    |
-| `height`          | Number  | `600`   | Canvas height                                   |
-| `offsetX`         | Number  | `0`     | Canvas offset X (from center)                   |
-| `offsetY`         | Number  | `0`     | Canvas offset Y (from center)                   |
-| `scale`           | Number  | `1`     | Initial Scale (if not fitted on init)           |
-| `scaleOld`        | Number  | `scale` | Old Scale value (before changed)                |
-| `scaleFactor`     | Number  | `0.2`   | Scale factor                                    |
-| `scaleMin`        | Number  | `0.05`  | Scale min value                                 |
-| `scaleMax`        | Number  | `10`    | Scale max value                                 |
-| `scaleTransition` | Number  | `250`   | *ms* scale animation duration (mousewheel Only) |
-| `padd`            | Number  | `40`    | Min visible canvas padd                         |
-| `panStep`         | Number  | `50`    | Pixels pan step value                           |
-| `fitOnInit`       | Boolean | `true`  | Fix canvas into viewport on init                |
-| `canDrag`         | Boolean | `true`  | If canvas can be pointer-dragged                |
-| `canPinch`        | Boolean | `true`  | Allow two-finger pinch                          |
+| Name                 | Type    | Default | Description                           |
+| -------------------- | ------- | ------- | ------------------------------------- |
+| `width`              | Number  | `800`   | Canvas width                          |
+| `height`             | Number  | `600`   | Canvas height                         |
+| `offsetX`            | Number  | `0`     | Canvas offset X (from center)         |
+| `offsetY`            | Number  | `0`     | Canvas offset Y (from center)         |
+| `scale`              | Number  | `1`     | Initial Scale (if not fitted on init) |
+| `scaleOld`           | Number  | `scale` | Old Scale value (before changed)      |
+| `scaleFactor`        | Number  | `0.2`   | Scale factor                          |
+| `scaleMin`           | Number  | `0.05`  | Scale min value                       |
+| `scaleMax`           | Number  | `10`    | Scale max value                       |
+| `transitionDuration` | Number  | `250`   | *ms* transition duration              |
+| `padd`               | Number  | `40`    | Min visible canvas padd               |
+| `panStep`            | Number  | `50`    | Pixels pan step value                 |
+| `fitOnInit`          | Boolean | `true`  | Fix canvas into viewport on init      |
+| `canDrag`            | Boolean | `true`  | If canvas can be pointer-dragged      |
+| `canPinch`           | Boolean | `true`  | Allow two-finger pinch                |
 
 ## Options &mdash; Events
 
-| Name           | Description                                          |
-| -------------- | ---------------------------------------------------- |
-| `onInit()`     | Triggered on class instantiation                     |
-| `onScale()`    | Triggered on scale change after `scaleTransition` ms |
-| `onPan()`      | Triggered on pan (pointermove)                       |
-| `onPanStart()` | Triggered on pan (pointerdown)                       |
-| `onPanEnd()`   | Triggered on pan (pointerup)                         |
+| Name           | Description                      |
+| -------------- | -------------------------------- |
+| `onInit()`     | Triggered on class instantiation |
+| `onScale()`    | Triggered on scale change        |
+| `onPan()`      | Triggered on pan (pointermove)   |
+| `onPanStart()` | Triggered on pan (pointerdown)   |
+| `onPanEnd()`   | Triggered on pan (pointerup)     |
 
 ## Methods
 

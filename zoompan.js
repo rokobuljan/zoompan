@@ -42,7 +42,7 @@ class ZoomPan {
                 scaleMax: 10,
                 scaleMin: 0.05,
                 scaleFactor: 0.2,
-                scaleTransition: 250,
+                transitionDuration: 250,
                 padd: 40,
                 panStep: 50,
                 fitOnInit: true,
@@ -439,8 +439,8 @@ class ZoomPan {
     }
 
     transform() {
-        const scaleDuration = this.isPinch || this.isDrag ? 0 : this.scaleTransition;
-        const translateDuration = this.isDrag ? 0 : this.scaleTransition;
+        const scaleDuration = this.isPinch || this.isDrag ? 0 : this.transitionDuration;
+        const translateDuration = this.isDrag ? 0 : this.transitionDuration;
 
         this.elCanvas.style.transition = `scale ${scaleDuration}ms, translate ${translateDuration}ms`;
         this.elCanvas.addEventListener("transitionend", () => {
