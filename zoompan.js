@@ -335,7 +335,17 @@ class ZoomPan {
         const widthPercent = thumbSizeX / vpt.width * 100;
         const leftPercent = thumbPosX / vpt.width * 100;
         const heightPercent = thumbSizeY / vpt.height * 100;
-        const topPercent = thumbPosY / vpt.height * 100
+        const topPercent = thumbPosY / vpt.height * 100;
+        const scaleDuration = this.isPinch || this.isDrag ? 0 : this.transitionDuration;
+        const translateDuration = this.isDrag ? 0 : this.transitionDuration;
+
+        this.elThumbX.style.transition = `width ${scaleDuration}ms, left ${translateDuration}ms`;
+        this.elThumbY.style.transition = `height ${scaleDuration}ms, top ${translateDuration}ms`;
+        this.elCanvas.addEventListener("transitionend", () => {
+            this.elThumbX.style.transition = `width 0, left 0`;
+            this.elThumbY.style.transition = `height 0, top 0`;
+        }, { once: true });
+
         this.elThumbX.style.width = `${widthPercent}%`;
         this.elThumbX.style.left = `${leftPercent}%`;
         this.elThumbY.style.height = `${heightPercent}%`;
