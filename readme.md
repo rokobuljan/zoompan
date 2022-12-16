@@ -104,12 +104,6 @@ const ZP = new ZoomPan(someElement, {
 | `getWheelDelta(Event)`                | number                | Get wheel delta `+1` or `-1` on wheel-down     |
 | `calcScaleDelta(delta)`               | number                | Get the new scale value from delta             |
 
-
-
-## TODO
-
-- Create NPM package
-
-### Licence
+## Licence
 
 MIT
