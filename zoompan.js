@@ -1,14 +1,9 @@
-/*
- * ZoomPan
- */
-
 // Helper functions
 
 const el = (sel, par) => (par || document).querySelector(sel);
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 const noop = () => { };
 const pointsDistance = (x1, x2, y1, y2) => Math.hypot(x2 - x1, y2 - y1);
-
 const dragHandler = (el, evFn = {}) => {
     const onUp = (evt) => {
         removeEventListener("pointermove", evFn.onMove);
@@ -25,8 +20,16 @@ const dragHandler = (el, evFn = {}) => {
     });
 };
 
+/**
+ * ZoomPan
+ * @class
+ */
 class ZoomPan {
 
+    /**
+     * @param {string|Node} selector String selector or Element, Node 
+     * @param {object} options Customization options
+     */
     constructor(selector, options = {}) {
 
         Object.assign(
@@ -35,7 +38,7 @@ class ZoomPan {
             {
                 width: 800, // Canvas width
                 height: 600, // Canvas height
-                offsetX: 0, // Pan offset. 0 = From canvas center
+                offsetX: 0, // Pan offset (from canvas center)
                 offsetY: 0,
                 scale: 1,
                 scaleOld: 1,
@@ -69,7 +72,15 @@ class ZoomPan {
                 isDrag: false,
                 isPinch: false,
             });
+        
+        this.init();
+    }
 
+    /**
+     * Initialization 
+     * @return {this} instance
+     */
+    init() {
         this.elParent.classList.add("zoompan");
 
         // Apply width height to canvas...
@@ -84,7 +95,7 @@ class ZoomPan {
         }
 
         // Pointers
-
+        
         const pointers = {
             mouse: new Map(),
             touch: new Map(),
@@ -219,37 +230,38 @@ class ZoomPan {
 
         // Emit init is done: 
         this.onInit();
+
+        return this;
     }
 
     /**
      * Get pointer origin XY from pointer position
-     * relative from canvas center
+     * relative to canvas center
      * @param {PointerEvent|Object} ev Event with x,y pointer coordinates of Object {x,y}
-     * @returns {Object} {originX, originY} offsets from canvas center
+     * @return {object} {originX, originY} offsets from canvas center
      */
-    getPointerOrigin(ev) {
-        // Get XY coordinates from canvas center:
+    getPointerOrigin({ x, y }) {
         const vpt = this.getViewport();
         const cvs = this.getCanvas();
-        const originX = ev.x - vpt.x - cvs.x - cvs.width / 2;
-        const originY = ev.y - vpt.y - cvs.y - cvs.height / 2;
+        const originX = x - vpt.x - cvs.x - cvs.width / 2;
+        const originY = y - vpt.y - cvs.y - cvs.height / 2;
         return { originX, originY }
     }
 
     /**
      * Get -1 or +1 integer delta from mousewheel 
      * @param {PointerEvent|Object} ev Event with deltaY of Object with the same deltaY property
+     * @return {number} -1 | +1
      */
-    getWheelDelta(ev) {
-        const delta = Math.sign(-ev.deltaY);
+    getWheelDelta({ deltaY }) {
+        const delta = Math.sign(-deltaY);
         return delta;
     }
 
     /**
      * Calculate the new scale value by a given delta.
-     * The returned value is calmped my the defined min max options.
      * @param {number} delta positive or negative integer 
-     * @returns {number} new scale value
+     * @returns {number} new scale value calmped by the defined scaleMin/Max options
      */
     calcScaleDelta(delta) {
         const scale = this.scale * Math.exp(delta * this.scaleFactor);
@@ -262,6 +274,7 @@ class ZoomPan {
      * (Also, update the scrollbars)
      * @param {number} width 
      * @param {number} height 
+     * @returns {ThisType}
      */
     resize(width, height) {
         this.width = width ?? this.width;
@@ -269,10 +282,11 @@ class ZoomPan {
         this.elCanvas.style.width = `${this.width}px`;
         this.elCanvas.style.height = `${this.height}px`;
         this.updateScrollbars();
+        return this;
     }
 
     /**
-     * Fit ("contain") canvas into viewport center.
+     * Fit (contain) canvas into viewport center.
      * Scale to fit original size (1.0) or less with "padd" spacing
      */
     fit() {
@@ -281,6 +295,7 @@ class ZoomPan {
         const fitRatio = +Math.min(1, wRatio, hRatio).toFixed(1);
         this.scaleTo(fitRatio);
         this.panTo(0, 0);
+        return this;
     }
 
     /**
@@ -350,31 +365,39 @@ class ZoomPan {
         this.elThumbX.style.left = `${leftPercent}%`;
         this.elThumbY.style.height = `${heightPercent}%`;
         this.elThumbY.style.top = `${topPercent}%`;
+
+        return this;
     }
 
     /**
      * Apply canvas new scale by a given delta value (i.e: +1, -1, +2, ...)
      * @param {number} delta 
+     * @return {this} instance
      */
     scaleDelta(delta) {
         const scaleNew = this.calcScaleDelta(delta);
         this.scaleTo(scaleNew);
+        return this;
     }
 
     /**
      * Scale canvas element up
      * Alias for scaling by delta +1
+     * @return {this} instance
      */
     scaleUp() {
         this.scaleDelta(1);
+        return this;
     }
 
     /**
      * Scale canvas element down
      * Alias for scaling by delta -1
+     * @return {this} instance
      */
     scaleDown() {
         this.scaleDelta(-1);
+        return this;
     }
 
     /**
@@ -383,6 +406,7 @@ class ZoomPan {
      * @param {number} scaleNew 
      * @param {number} originX Scale to X point (relative to canvas center)
      * @param {number} originY Scale to Y point (relative to canvas center)
+     * @return {this} instance
      */
     scaleTo(scaleNew = 1, originX, originY) {
         this.scaleOld = this.scale;
@@ -410,20 +434,22 @@ class ZoomPan {
 
         this.transform();
         this.onScale();
+        return this;
     }
 
     /**
      * Apply scale from the mouse wheel Event at the given
      * pointer origin relative to canvas center.
      * @param {WheelEvent} ev 
+     * @return {this} instance
      */
     scaleWheel(ev) {
         ev.preventDefault();
         const delta = this.getWheelDelta(ev);
         const scaleNew = this.calcScaleDelta(delta);
         const { originX, originY } = this.getPointerOrigin(ev);
-        this.elCanvas.transformOrigin = `${originX}`
         this.scaleTo(scaleNew, originX, originY);
+        return this;
     }
 
     /**
@@ -432,6 +458,7 @@ class ZoomPan {
      * @param {number} offsetX 
      * @param {number} offsetY 
      * @param {boolean} isTransform Set to false if you're already applying transformations from the scaleTo function
+     * @return {this} instance
      */
     panTo(offsetX, offsetY, isTransform = true) {
         const vpt = this.getViewport();
@@ -444,10 +471,19 @@ class ZoomPan {
         this.offsetX = clamp(offsetX, -spaceX, spaceX);
         this.offsetY = clamp(offsetY, -spaceY, spaceY);
 
-        if (isTransform) this.transform();
+        if (isTransform) {
+            this.transform();
+        }
+        
         this.onPan();
+        return this;
     }
 
+    /**
+     * Trigger canvas element scale and translate.  
+     * Also, repaint the scrollbars
+     * @return {this} instance
+     */
     transform() {
         const scaleDuration = this.isPinch || this.isDrag ? 0 : this.transitionDuration;
         const translateDuration = this.isDrag ? 0 : this.transitionDuration;
@@ -461,34 +497,44 @@ class ZoomPan {
         this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
 
         this.updateScrollbars();
+
+        return this;
     }
 
     /**
      * Pan the canvas up by panStep px.
+     * @return {this} instance
      */
     panUp() {
         this.panTo(this.offsetX, this.offsetY - this.panStep);
+        return this;
     }
 
     /**
      * Pan the canvas down by panStep px.
+     * @return {this} instance
      */
     panDown() {
         this.panTo(this.offsetX, this.offsetY + this.panStep);
+        return this;
     }
 
     /**
      * Pan the canvas left by panStep px.
+     * @return {this} instance
      */
     panLeft() {
         this.panTo(this.offsetX - this.panStep, this.offsetY);
+        return this;
     }
 
     /**
      * Pan the canvas right by panStep px.
+     * @return {this} instance
      */
     panRight() {
         this.panTo(this.offsetX + this.panStep, this.offsetY);
+        return this;
     }
 }
 
