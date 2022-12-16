@@ -1,6 +1,6 @@
 {
   "name": "@rbuljan/zoompan",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Zoomable and pannable area with scrollbars. Inspired by graphical editors like Photoshop.",
   "main": "zoompan.js",
   "directories": {
