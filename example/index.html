@@ -91,6 +91,11 @@
         }
 
         .zoompan .zoompan-canvas {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 3rem;
             background-size: 50px 50px, 50px 50px, cover;
             background-image:
                 linear-gradient(to right, black 1px, transparent 1px),
@@ -151,19 +156,6 @@
 
     <main>
         <div id="myEditor">
-
-            <div class="zoompan-viewport">
-                <div class="zoompan-canvas"></div>
-            </div>
-
-            <div class="zoompan-track-x">
-                <div class="zoompan-thumb-x"></div>
-            </div>
-
-            <div class="zoompan-track-y">
-                <div class="zoompan-thumb-y"></div>
-            </div>
-
             <div id="controls">
                 <button id="zoomOut">-</button>
                 <button id="zoomIn">+</button>
@@ -204,9 +196,9 @@
             height: 500,
             canDrag: false, // We want to use "Ctrl" key to drag-pan (See below)
             onInit() {
-                setSelectOptionText(this.scale);
+                this.elCanvas.textContent = "Welcome to ZoomPan";
             },
-            onScale() {
+            onChange() {
                 setSelectOptionText(this.scale);
             }
         });

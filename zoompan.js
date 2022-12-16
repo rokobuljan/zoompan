@@ -1,6 +1,7 @@
 // Helper functions
 
 const el = (sel, par) => (par || document).querySelector(sel);
+const elNew = (tag, prop) => Object.assign(document.createElement(tag), prop);
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 const noop = () => { };
 const pointsDistance = (x1, x2, y1, y2) => Math.hypot(x2 - x1, y2 - y1);
@@ -51,23 +52,20 @@ class ZoomPan {
                 fitOnInit: true,
                 canDrag: true,
                 canPinch: true,
+                scrollbars: true,
+                scrollbarsWidth: 14, // px
                 onPan: noop,
                 onPanStart: noop,
                 onPanEnd: noop,
                 onScale: noop,
                 onInit: noop,
+                onChange: noop,
             },
             // User options:
             options,
             // Overrides:
             {
                 elParent: typeof selector === "string" ? el(selector) : selector,
-                elViewport: el(".zoompan-viewport", this.elParent),
-                elCanvas: el(".zoompan-canvas", this.elParent),
-                elTrackX: el(".zoompan-track-x", this.elParent),
-                elThumbX: el(".zoompan-thumb-x", this.elParent),
-                elTrackY: el(".zoompan-track-y", this.elParent),
-                elThumbY: el(".zoompan-thumb-y", this.elParent),
                 pinchDistance: 0, // Distance between two pointers
                 isDrag: false,
                 isPinch: false,
@@ -82,6 +80,63 @@ class ZoomPan {
      */
     init() {
         this.elParent.classList.add("zoompan");
+        this.elParent.style.setProperty("--scrollbarsWidth", this.scrollbars ? this.scrollbarsWidth : 0);
+
+        // Create DIV elements viewport and canvas
+        this.elViewport = elNew("div", { className: "zoompan-viewport" });
+        this.elCanvas = elNew("div", { className: "zoompan-canvas" });
+        this.elViewport.append(this.elCanvas);
+        this.elParent.prepend(this.elViewport);
+
+        // Create scrollbars
+
+        if (this.scrollbars) {
+
+            this.elTrackX = elNew("div", { className: "zoompan-track zoompan-track-x" });
+            this.elThumbX = elNew("div", { className: "zoompan-thumb zoompan-thumb-x" });
+            this.elTrackY = elNew("div", { className: "zoompan-track zoompan-track-y" });
+            this.elThumbY = elNew("div", { className: "zoompan-thumb zoompan-thumb-y" });
+
+            this.elTrackX.append(this.elThumbX);
+            this.elTrackY.append(this.elThumbY);
+
+            this.elParent.prepend(this.elTrackX);
+            this.elParent.prepend(this.elTrackY);
+
+            // Horizontal scrollbar track drag:
+            dragHandler(this.elTrackX, {
+                onDown: () => {
+                    this.isDrag = true;
+                    this.onPanStart();
+                },
+                onUp: () => {
+                    this.isDrag = false;
+                    this.onPanEnd();
+                },
+                onMove: (ev) => {
+                    const area = this.getArea();
+                    this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
+                }
+            });
+
+            // Vertical scrollbar track drag:
+            dragHandler(this.elTrackY, {
+                onDown: () => {
+                    this.isDrag = true;
+                    this.onPanStart();
+                },
+                onUp: () => {
+                    this.isDrag = false;
+                    this.onPanEnd();
+                },
+                onMove: (ev) => {
+                    const area = this.getArea();
+                    this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
+                }
+            });
+        }
+
+
 
         // Apply width height to canvas...
         this.resize();
@@ -191,38 +246,6 @@ class ZoomPan {
 
         this.elViewport.addEventListener("pointerdown", onStart, { passive: false });
 
-        // Horizontal scrollbar track drag:
-        dragHandler(this.elTrackX, {
-            onDown: () => {
-                this.isDrag = true;
-                this.onPanStart();
-            },
-            onUp: () => {
-                this.isDrag = false;
-                this.onPanEnd();
-            },
-            onMove: (ev) => {
-                const area = this.getArea();
-                this.panTo(this.offsetX - (area.width / this.elTrackX.offsetWidth) * ev.movementX, this.offsetY);
-            }
-        });
-
-        // Vertical scrollbar track drag:
-        dragHandler(this.elTrackY, {
-            onDown: () => {
-                this.isDrag = true;
-                this.onPanStart();
-            },
-            onUp: () => {
-                this.isDrag = false;
-                this.onPanEnd();
-            },
-            onMove: (ev) => {
-                const area = this.getArea();
-                this.panTo(this.offsetX, this.offsetY - (area.height / this.elTrackY.offsetHeight) * ev.movementY);
-            }
-        });
-
         // Fix pan on browser resize
         addEventListener("resize", () => {
             this.panTo(this.offsetX, this.offsetY);
@@ -230,6 +253,7 @@ class ZoomPan {
 
         // Emit init is done: 
         this.onInit();
+        this.onChange();
 
         return this;
     }
@@ -338,8 +362,12 @@ class ZoomPan {
     /**
      * Repaint scrollbars.
      * Use after the canvas changes position or scales.
+     * @return {this} instance
      */
     updateScrollbars() {
+        // Ignore if scrollbars are not used
+        if (!this.scrollbars) return this;
+
         const vpt = this.getViewport();
         const cvs = this.getCanvas();
         const area = this.getArea();
@@ -497,6 +525,7 @@ class ZoomPan {
         this.elCanvas.style.translate = `${this.offsetX}px ${this.offsetY}px`;
 
         this.updateScrollbars();
+        this.onChange();
 
         return this;
     }

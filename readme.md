@@ -7,52 +7,45 @@ Supports Pinch gesture for scaling
 
 ![Zoom pan area - Image edit software scroll area](./zoompan.png)
 
-## Example
+### Example
 
 See: `example/index.html` for a use-case.
 
-## Setup
+## Getting started
+
+```sh
+npm i @rbuljan/zoompan
+```
 
 **HTML:**
 
 ```html
-<div id="myEditor">
-    <div class="zoompan-viewport">
-        <div class="zoompan-canvas"></div>
-    </div>
-
-    <div class="zoompan-track-x">
-        <div class="zoompan-thumb-x"></div>
-    </div>
-    <div class="zoompan-track-y">
-        <div class="zoompan-thumb-y"></div>
-    </div>
-</div>
+<!-- index.html -->
+<div id="myEditor"></div>
 ```
 
-**CSS:**
-
-```html
-<link rel="stylesheet" href="./zoompan.css">
-```
-
-**JS:**
+I.e: using Vite.js
 
 ```js
-import ZoomPan from "./zoompan.js";
+// main.js
 
-// Initialize ZoomPan on selector ID or on Element
-const ZP = new ZoomPan("#myEditor");
-```
+import "@rbuljan/zoompan/zoompan.css";
+import ZoomPan from "@rbuljan/zoompan";
 
-Customization options:
-
-```js
-const ZP = new ZoomPan(someElement, {
-    width: 1920,
-    height: 1080,
-    // Other options here
+const ZP = new ZoomPan("#myEditor", {
+  width: 800,
+  height: 600,
+  onInit() {
+    this.elCanvas.style.backgroundColor = "gold";
+    this.elCanvas.textContent = "Hello ZoomPan!";
+  },
+  onChange() {
+    console.log(this);
+  },
+  // other options here...
 });
+
+console.log(ZP);
 ```
 
 ## Options
@@ -71,6 +64,8 @@ const ZP = new ZoomPan(someElement, {
 | `transitionDuration` | Number  | `250`   | *ms* transition duration              |
 | `padd`               | Number  | `40`    | Min visible canvas padd               |
 | `panStep`            | Number  | `50`    | Pixels pan step value                 |
+| `scrollbars`         | Boolean | `true`  | Show scrollbars                       |
+| `scrollbarsWidth`    | Number  | `14`    | *px* scrollbars size                  |
 | `fitOnInit`          | Boolean | `true`  | Fix canvas into viewport on init      |
 | `canDrag`            | Boolean | `true`  | If canvas can be pointer-dragged      |
 | `canPinch`           | Boolean | `true`  | Allow two-finger pinch                |
@@ -82,6 +77,7 @@ const ZP = new ZoomPan(someElement, {
 | `onInit()`     | Triggered on class instantiation |
 | `onScale()`    | Triggered on scale change        |
 | `onPan()`      | Triggered on pan (pointermove)   |
+| `onChange()`   | Triggered on: init, pan, scale   |
 | `onPanStart()` | Triggered on pan (pointerdown)   |
 | `onPanEnd()`   | Triggered on pan (pointerup)     |
 

@@ -4,16 +4,12 @@
  * Basic template styles:
  */
 
-:root {
-    --scrollHeight: 14px;
-}
-
 .zoompan-viewport {
     position: relative;
     display: flex;
     overflow: hidden;
-    width: calc(100% - var(--scrollHeight));
-    height: calc(100% - var(--scrollHeight));
+    width: calc(100% - var(--scrollbarsWidth) * 1px);
+    height: calc(100% - var(--scrollbarsWidth) * 1px);
     align-items: center;
     justify-content: center;
     touch-action: none;
@@ -29,8 +25,8 @@
     position: absolute;
     bottom: 0;
     left: 0;
-    right: var(--scrollHeight);
-    height: var(--scrollHeight);
+    right: calc(var(--scrollbarsWidth) * 1px);
+    height: calc(var(--scrollbarsWidth) * 1px);
     background: rgba(0, 0, 0, 0.3);
     touch-action: none;
 }
@@ -39,8 +35,8 @@
     position: absolute;
     top: 0;
     right: 0;
-    width: var(--scrollHeight);
-    bottom: var(--scrollHeight);
+    width: calc(var(--scrollbarsWidth) * 1px);
+    bottom: calc(var(--scrollbarsWidth) * 1px);
     background: rgba(0, 0, 0, 0.3);
     touch-action: none;
 }
