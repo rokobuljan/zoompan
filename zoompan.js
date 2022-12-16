@@ -72,7 +72,7 @@ class ZoomPan {
                 isDrag: false,
                 isPinch: false,
             });
-        
+
         this.init();
     }
 
@@ -95,7 +95,7 @@ class ZoomPan {
         }
 
         // Pointers
-        
+
         const pointers = {
             mouse: new Map(),
             touch: new Map(),
@@ -474,7 +474,7 @@ class ZoomPan {
         if (isTransform) {
             this.transform();
         }
-        
+
         this.onPan();
         return this;
     }
