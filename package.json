@@ -1,0 +1,24 @@
+{
+  "name": "@rbuljan/zoompan",
+  "version": "1.0.0",
+  "description": "Zoomable and pannable area with scrollbars. Inspired by graphical editors like Photoshop.",
+  "main": "zoompan.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rokobuljan/zoompan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rokobuljan/zoompan/issues"
+  },
+  "homepage": "https://github.com/rokobuljan/zoompan#readme",
+  "type": "module"
+}
