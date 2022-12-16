@@ -1,6 +1,6 @@
 {
   "name": "@rbuljan/zoompan",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Zoomable and pannable area with scrollbars. Inspired by graphical editors like Photoshop.",
   "main": "zoompan.js",
   "directories": {
@@ -13,9 +13,9 @@
     "type": "git",
     "url": "git+https://github.com/rokobuljan/zoompan.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["Pan", "Zoom", "Scale", "Canvas", "Graphic editor", "Scrollable"],
+  "author": "Roko C. Buljan",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/rokobuljan/zoompan/issues"
   },
