@@ -99,21 +99,9 @@
             background-size: 50px 50px, 50px 50px, cover;
             background-image:
                 linear-gradient(to right, black 1px, transparent 1px),
-                linear-gradient(to bottom, black 1px, transparent 1px),
-                linear-gradient(45deg,
-                    hsl(0, 100%, 50%),
-                    hsl(30, 100%, 50%),
-                    hsl(60, 100%, 50%),
-                    hsl(90, 100%, 50%),
-                    hsl(120, 100%, 50%),
-                    hsl(150, 100%, 50%),
-                    hsl(180, 100%, 50%),
-                    hsl(210, 100%, 50%),
-                    hsl(240, 100%, 50%),
-                    hsl(270, 100%, 50%),
-                    hsl(300, 100%, 50%),
-                    hsl(330, 100%, 50%),
-                    hsl(360, 100%, 50%));
+                linear-gradient(to bottom, black 1px, transparent 1px)
+            ;
+            background-color: #fff;
         }
 
         .zoompan .zoompan-track-x {
@@ -196,7 +184,7 @@
             height: 500,
             canDrag: false, // We want to use "Ctrl" key to drag-pan (See below)
             onInit() {
-                this.elCanvas.textContent = "Welcome to ZoomPan";
+                this.elCanvas.textContent = "ZoomPan";
             },
             onChange() {
                 setSelectOptionText(this.scale);
