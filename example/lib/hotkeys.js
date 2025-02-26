@@ -9,8 +9,15 @@
  * @returns {object} the currently assigned hotkeys `lib` and the `off("combo keys", fb)` method to remove listeners. 
  */
 const hotkeys = (data, elementListener = window) => {
+    const selectorTextEditable = `
+  [contenteditable="true"],
+  [contenteditable=""],
+  textarea, 
+  select,
+  input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="radio"]):not([type="checkbox"])
+`;
     const sortIns = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
-    const isTargetEditable = (evt) => /^(INPUT|TEXTAREA)$/.test(evt.target.tagName); // || evt.target.closest("[contenteditable]")
+    const isTargetEditable = (evt) => !!evt.target.closest(selectorTextEditable);
     const aliasCtrl = (key) => key.replace(/\b(control|meta)\b/ig, "ctrl");
     const strToEvtName = (str) => arrToStrSorted(aliasCtrl(str).trim().split(/ +/));
     const arrToStrSorted = (arr) => arr.sort(sortIns).join(" ").toLowerCase();
